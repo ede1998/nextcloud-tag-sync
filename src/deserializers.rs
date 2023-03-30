@@ -1,18 +1,55 @@
 use std::error::Error;
 
-use crate::{map::BidirectionalMap, requests::ListTags};
+use crate::{map::BidirectionalMap, requests::ListFilesWithTag, requests::ListTags};
 
 pub trait Parse {
     type Output;
     fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>>;
 }
 
+fn empty_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: std::str::FromStr,
+    T::Err: std::fmt::Display,
+{
+    match serde::Deserialize::deserialize(de)? {
+        None | Some("") => Ok(None),
+        Some(s) => s.parse().map(Some).map_err(serde::de::Error::custom),
+    }
+}
+
+type DeserializeError = serde_path_to_error::Error<quick_xml::DeError>;
+
+fn parse<'de, T: serde::Deserialize<'de>>(input: &'de str) -> Result<T, DeserializeError> {
+    let deserializer = &mut quick_xml::de::Deserializer::from_str(input);
+    serde_path_to_error::deserialize(deserializer)
+}
+
 impl Parse for ListTags {
     type Output = BidirectionalMap<u64, String>;
 
     fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>> {
-        let deserializer = &mut quick_xml::de::Deserializer::from_str(input);
-        let element: MultiStatus = serde_path_to_error::deserialize(deserializer)?;
+        #[derive(Debug, serde_query::Deserialize)]
+        struct MultiStatus {
+            #[query(".response.[].propstat.prop")]
+            props: Vec<Prop>,
+        }
+
+        #[derive(serde::Deserialize, Debug, Clone)]
+        #[serde(rename_all = "kebab-case")]
+        struct Prop {
+            #[serde(deserialize_with = "empty_as_none")]
+            id: Option<u64>,
+            display_name: Option<String>,
+            #[serde(deserialize_with = "empty_as_none")]
+            user_visible: Option<bool>,
+            #[serde(deserialize_with = "empty_as_none")]
+            user_assignable: Option<bool>,
+        }
+
+        let element: MultiStatus = parse(input)?;
+
         Ok(element
             .props
             .into_iter()
@@ -29,33 +66,18 @@ impl Parse for ListTags {
     }
 }
 
-#[derive(Debug, serde_query::Deserialize)]
-struct MultiStatus {
-    #[query(".response.[].propstat.prop")]
-    props: Vec<Prop>,
-}
+impl Parse for ListFilesWithTag {
+    type Output = Vec<String>;
 
-#[derive(serde::Deserialize, Debug, Clone)]
-#[serde(rename_all = "kebab-case")]
-struct Prop {
-    #[serde(deserialize_with = "empty_as_none")]
-    id: Option<u64>,
-    display_name: Option<String>,
-    #[serde(deserialize_with = "empty_as_none")]
-    user_visible: Option<bool>,
-    #[serde(deserialize_with = "empty_as_none")]
-    user_assignable: Option<bool>,
-}
+    fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>> {
+        #[derive(Debug, serde_query::Deserialize)]
+        struct MultiStatus {
+            #[query(".response.[].href")]
+            files: Vec<String>,
+        }
+        let element: MultiStatus = parse(input)?;
 
-fn empty_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-    T: std::str::FromStr,
-    T::Err: std::fmt::Display,
-{
-    match serde::Deserialize::deserialize(de)? {
-        None | Some("") => Ok(None),
-        Some(s) => s.parse().map(Some).map_err(serde::de::Error::custom),
+        Ok(element.files)
     }
 }
 

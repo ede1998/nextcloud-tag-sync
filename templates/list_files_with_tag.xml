@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<oc:filter-files xmlns:d="DAV:"
+    xmlns:oc="http://owncloud.org/ns"
+    xmlns:nc="http://nextcloud.org/ns">
+    <oc:filter-rules>
+        <oc:systemtag>{{ tag_id }}</oc:systemtag>
+    </oc:filter-rules>
+</oc:filter-files>

@@ -1,23 +1,32 @@
-use crate::map::BidirectionalMap;
+use std::error::Error;
 
-pub fn deserialize_tags(
-    input: &str,
-) -> Result<BidirectionalMap<u64, String>, Box<dyn std::error::Error>> {
-    let deserializer = &mut quick_xml::de::Deserializer::from_str(input);
-    let element: MultiStatus = serde_path_to_error::deserialize(deserializer)?;
-    Ok(element
-        .props
-        .into_iter()
-        .filter_map(|prop| {
-            let visible = prop.user_visible.unwrap_or_default();
-            let assignable = prop.user_assignable.unwrap_or_default();
-            if !visible || !assignable {
-                return None;
-            }
+use crate::{map::BidirectionalMap, requests::ListTags};
 
-            prop.id.zip(prop.display_name)
-        })
-        .collect())
+pub trait Parse {
+    type Output;
+    fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>>;
+}
+
+impl Parse for ListTags {
+    type Output = BidirectionalMap<u64, String>;
+
+    fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>> {
+        let deserializer = &mut quick_xml::de::Deserializer::from_str(input);
+        let element: MultiStatus = serde_path_to_error::deserialize(deserializer)?;
+        Ok(element
+            .props
+            .into_iter()
+            .filter_map(|prop| {
+                let visible = prop.user_visible.unwrap_or_default();
+                let assignable = prop.user_assignable.unwrap_or_default();
+                if !visible || !assignable {
+                    return None;
+                }
+
+                prop.id.zip(prop.display_name)
+            })
+            .collect())
+    }
 }
 
 #[derive(Debug, serde_query::Deserialize)]
@@ -57,7 +66,7 @@ mod tests {
     #[test]
     fn deserialize_all_tags() {
         let input = include_str!("../helper-scripts/all_tags.xml");
-        let tags = deserialize_tags(input).unwrap();
+        let tags = ListTags::parse(input).unwrap();
         assert_eq!(tags.len(), 237);
         assert!(tags
             .iter()

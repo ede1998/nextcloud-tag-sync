@@ -14,8 +14,13 @@ where
     K2: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut iterations = 0;
         for (apples, oranges) in self.map1.iter() {
-            writeln!(f, "{apples} <=> {oranges}")?;
+            iterations += 1;
+            write!(f, "{apples} <=> {oranges}")?;
+            if iterations != self.map1.len() {
+                writeln!(f)?;
+            }
         }
         Ok(())
     }

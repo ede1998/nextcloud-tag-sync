@@ -49,18 +49,20 @@ where
     K1: Eq + Hash,
     K2: Eq + Hash,
 {
-    pub fn get_first<Q: ?Sized>(&self, k: &Q) -> Option<&K1>
+    pub fn get_first<Q>(&self, k: &Q) -> Option<&K1>
     where
         K2: std::borrow::Borrow<Q>,
         Q: Hash + Eq,
+        Q: ?Sized,
     {
         self.map2.get(k)
     }
 
-    pub fn get_second<Q: ?Sized>(&self, k: &Q) -> Option<&K2>
+    pub fn get_second<Q>(&self, k: &Q) -> Option<&K2>
     where
         K1: std::borrow::Borrow<Q>,
         Q: Hash + Eq,
+        Q: ?Sized,
     {
         self.map1.get(k)
     }

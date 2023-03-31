@@ -2,7 +2,6 @@ use std::error::Error;
 
 use requests::{Connection, ListFilesWithTag, ListTags};
 
-mod deserializers;
 mod map;
 mod requests;
 
@@ -12,8 +11,10 @@ async fn main() {
         let connection = Connection::default();
         let tags = connection.request(ListTags).await?;
         println!("List of all tags:\n{tags}");
-        let files = connection.request(ListFilesWithTag::new(382)).await?;
-        println!("All alligators are here: {files:?}");
+        let tag_name = "Alligator";
+        let tag_id = *tags.get_first(tag_name).unwrap();
+        let files = connection.request(ListFilesWithTag::new(tag_id)).await?;
+        println!("Files tagged with {tag_name} are: {files:?}");
         Ok(())
     }
     match m().await {

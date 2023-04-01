@@ -2,7 +2,7 @@ use std::{borrow::Cow, error::Error};
 
 use askama::Template;
 
-use crate::map::BidirectionalMap;
+use bimap::BiMap;
 
 use super::{empty_as_none, parse, Parse, Request};
 
@@ -21,7 +21,7 @@ impl Request for ListTags {
 }
 
 impl Parse for ListTags {
-    type Output = BidirectionalMap<u64, String>;
+    type Output = BiMap<u64, String>;
 
     fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>> {
         let element: MultiStatus = parse(input)?;

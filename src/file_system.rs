@@ -3,36 +3,48 @@ use std::{
     collections::{BTreeMap, HashSet},
     fmt::Debug,
     iter::Peekable,
+    ops::Deref,
     path::{Path, PathBuf},
 };
 
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
+struct PrefixMappingId(usize);
+
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct SyncedPath<'prefix> {
-    prefix: &'prefix PrefixMapping,
+pub struct SyncedPath {
+    prefix_id: PrefixMappingId,
     path: PathBuf,
 }
 
-impl<'prefix> SyncedPath<'prefix> {
-    pub fn local_file(&self) -> PathBuf {
-        self.prefix.local.join(&self.path)
+impl SyncedPath {
+    #[cfg(test)]
+    pub fn new(prefix_id: usize, path: &str) -> Self {
+        Self {
+            prefix_id: PrefixMappingId(prefix_id),
+            path: PathBuf::from(path),
+        }
     }
 
-    pub fn remote_file(&self) -> PathBuf {
-        self.prefix.remote.join(&self.path)
+    pub fn local_file(&self, repo: &Repository) -> PathBuf {
+        repo.prefixes[self.prefix_id.0].local.join(&self.path)
     }
 
-    fn from_local(local: &Path, repo: &'prefix Repository) -> Self {
-        let (prefix, path) = repo.split_prefix(local, FileLocation::Local);
+    pub fn remote_file(&self, repo: &Repository) -> PathBuf {
+        repo.prefixes[self.prefix_id.0].remote.join(&self.path)
+    }
+
+    fn from_local(local: &Path, repo: &Repository) -> Self {
+        let (prefix_id, path) = repo.split_prefix(local, FileLocation::Local);
         SyncedPath {
-            prefix,
+            prefix_id,
             path: path.to_owned(),
         }
     }
 
-    fn from_remote(remote: &Path, repo: &'prefix Repository) -> Self {
-        let (prefix, path) = repo.split_prefix(remote, FileLocation::Remote);
+    fn from_remote(remote: &Path, repo: &Repository) -> Self {
+        let (prefix_id, path) = repo.split_prefix(remote, FileLocation::Remote);
         SyncedPath {
-            prefix,
+            prefix_id,
             path: path.to_owned(),
         }
     }
@@ -44,8 +56,34 @@ struct TagDiff {
     right_only: Tags,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Tags(HashSet<String>);
+
+impl FromIterator<String> for Tags {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = String>,
+    {
+        Tags(iter.into_iter().collect())
+    }
+}
+
+impl<'a> FromIterator<&'a str> for Tags {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = &'a str>,
+    {
+        Tags(iter.into_iter().map(ToOwned::to_owned).collect())
+    }
+}
+
+impl Deref for Tags {
+    type Target = HashSet<String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl Debug for Tags {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -88,34 +126,45 @@ pub struct PrefixMapping {
     remote: PathBuf,
 }
 
-pub struct Repository<'prefix> {
-    prefixes: &'prefix [PrefixMapping],
-    files: BTreeMap<SyncedPath<'prefix>, Tags>,
+#[derive(Clone, Debug)]
+pub struct Repository {
+    prefixes: Vec<PrefixMapping>,
+    files: BTreeMap<SyncedPath, Tags>,
 }
 
-impl<'prefix> Repository<'prefix> {
+impl Repository {
+    pub fn new(prefixes: Vec<PrefixMapping>) -> Self {
+        Self {
+            prefixes,
+            files: BTreeMap::new(),
+        }
+    }
+
     fn split_prefix<'a>(
         &self,
         file: &'a Path,
         location: FileLocation,
-    ) -> (&PrefixMapping, &'a Path) {
+    ) -> (PrefixMappingId, &'a Path) {
         self.prefixes
             .iter()
-            .find_map(|prefix_map| {
+            .enumerate()
+            .find_map(|(i, prefix_map)| {
                 let prefix = match location {
                     FileLocation::Local => &prefix_map.local,
                     FileLocation::Remote => &prefix_map.remote,
                 };
                 file.strip_prefix(prefix)
-                    .map(|suffix| (prefix_map, suffix))
+                    .map(|suffix| (PrefixMappingId(i), suffix))
                     .ok()
             })
             .unwrap_or_else(|| panic!("missing prefix for {}", file.display()))
     }
 
-    pub fn insert(&mut self, file: SyncedPath) {}
+    pub fn insert(&mut self, path: SyncedPath, tags: Tags) {
+        self.files.insert(path, tags);
+    }
 
-    pub fn diff(self, other: Self, keep_side_on_conflict: Side) -> DiffIterator<'prefix> {
+    pub fn diff(self, other: Self, keep_side_on_conflict: Side) -> DiffIterator {
         assert_eq!(self.prefixes, other.prefixes);
         DiffIterator::new(
             self.files.into_iter(),
@@ -132,49 +181,54 @@ pub enum FileLocation {
     Remote,
 }
 
-pub struct DiffIterator<'prefix> {
-    left: Peekable<MapIter<'prefix>>,
-    right: Peekable<MapIter<'prefix>>,
-    prefixes: &'prefix [PrefixMapping],
-    files: BTreeMap<SyncedPath<'prefix>, Tags>,
+pub struct DiffIterator {
+    left: Peekable<MapIter>,
+    right: Peekable<MapIter>,
+    prefixes: Vec<PrefixMapping>,
+    files: BTreeMap<SyncedPath, Tags>,
     keep_side_on_conflict: Side,
 }
 
-impl<'prefix> Iterator for DiffIterator<'prefix> {
-    type Item = DiffResult<'prefix>;
+impl Iterator for DiffIterator {
+    type Item = DiffResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (left, right) = match (self.left.peek(), self.right.peek()) {
-            (None, None) => return None,
-            (None, Some(_)) => {
-                return self.advance(Side::Right);
-            }
-            (Some(_), None) => {
-                return self.advance(Side::Left);
-            }
-            (Some(l), Some(r)) => (&l.0, &r.0),
-        };
-        match left.cmp(right) {
-            Ordering::Less => {
-                return self.advance(Side::Left);
-            }
-            Ordering::Greater => {
-                return self.advance(Side::Right);
-            }
-            Ordering::Equal => {
-                return self.advance(Side::Both);
+        loop {
+            let (left, right) = match (self.left.peek(), self.right.peek()) {
+                (None, None) => return None,
+                (None, Some(_)) => {
+                    return self.advance(Side::Right);
+                }
+                (Some(_), None) => {
+                    return self.advance(Side::Left);
+                }
+                (Some(l), Some(r)) => (&l.0, &r.0),
+            };
+            match left.cmp(right) {
+                Ordering::Less => {
+                    return self.advance(Side::Left);
+                }
+                Ordering::Greater => {
+                    return self.advance(Side::Right);
+                }
+                Ordering::Equal => {
+                    let next = self.advance(Side::Both);
+                    if next.is_some() {
+                        return next;
+                    }
+                }
             }
         }
     }
 }
 
-type MapIter<'a> = std::collections::btree_map::IntoIter<SyncedPath<'a>, Tags>;
+type MapIter = std::collections::btree_map::IntoIter<SyncedPath, Tags>;
 
-impl<'prefix> DiffIterator<'prefix> {
+impl DiffIterator {
     pub fn new(
-        left: MapIter<'prefix>,
-        right: MapIter<'prefix>,
-        prefixes: &'prefix [PrefixMapping],
+        left: MapIter,
+        right: MapIter,
+        prefixes: Vec<PrefixMapping>,
         keep_side_on_conflict: Side,
     ) -> Self {
         DiffIterator {
@@ -186,14 +240,16 @@ impl<'prefix> DiffIterator<'prefix> {
         }
     }
 
-    pub fn finish(self) -> Repository<'prefix> {
+    pub fn finish(mut self) -> Repository {
+        // exhaust iterator if not already exhausted
+        (&mut self).for_each(drop);
         Repository {
             prefixes: self.prefixes,
             files: self.files,
         }
     }
 
-    fn diff_tags(&mut self, left: Tags, right: Tags, path: SyncedPath<'prefix>) -> (Tags, Tags) {
+    fn diff_tags(&mut self, left: Tags, right: Tags, path: SyncedPath) -> (Tags, Tags) {
         let diff = left.diff(right);
         let mut result_tags = diff.identical;
 
@@ -215,7 +271,7 @@ impl<'prefix> DiffIterator<'prefix> {
         (diff.left_only, diff.right_only)
     }
 
-    fn advance(&mut self, side: Side) -> Option<DiffResult<'prefix>> {
+    fn advance(&mut self, side: Side) -> Option<DiffResult> {
         let ((same_path, left_tags), (path, right_tags)) = match side {
             Side::Left => {
                 let (path, left) = self.left.next()?;
@@ -229,8 +285,9 @@ impl<'prefix> DiffIterator<'prefix> {
         };
 
         let (left_only, right_only) = self.diff_tags(left_tags, right_tags, same_path);
+        let is_different = !left_only.is_empty() || !right_only.is_empty();
 
-        Some(DiffResult {
+        is_different.then_some(DiffResult {
             path,
             left_only,
             right_only,
@@ -238,8 +295,9 @@ impl<'prefix> DiffIterator<'prefix> {
     }
 }
 
-pub struct DiffResult<'prefix> {
-    path: SyncedPath<'prefix>,
+#[derive(Debug, Clone)]
+pub struct DiffResult {
+    path: SyncedPath,
     left_only: Tags,
     right_only: Tags,
 }
@@ -249,4 +307,130 @@ pub enum Side {
     Left,
     Right,
     Both,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type TaggedFile = (
+        SyncedPath,
+        Vec<&'static str>,
+        Vec<&'static str>,
+        Vec<&'static str>,
+    );
+
+    fn mock_prefixes() -> Vec<PrefixMapping> {
+        vec![
+            PrefixMapping {
+                local: "/local/one".into(),
+                remote: "/remote/one".into(),
+            },
+            PrefixMapping {
+                local: "/local/two".into(),
+                remote: "/remote/two".into(),
+            },
+        ]
+    }
+
+    fn mock_files() -> Vec<TaggedFile> {
+        #[rustfmt::skip]
+        let files = vec![
+            (SyncedPath::new(0, "fumbling/driver"      ), vec!["fog", "error"],          vec!["study"], vec!["sheet", "toilet", "time"]),
+            (SyncedPath::new(0, "gruesome/tourney"     ), vec!["stop", "event"],         vec![],        vec![]),
+            (SyncedPath::new(0, "outstanding/solemnity"), vec!["mark", "jelly", "team"], vec!["brain"], vec![]),
+            (SyncedPath::new(0, "succinct/watchdog"    ), vec!["fog", "error", "sheet"], vec![],        vec![]),
+            (SyncedPath::new(1, "clueless/lodging"     ), vec![],                        vec!["burn"],  vec![]),
+            (SyncedPath::new(1, "experienced/mission"  ), vec![],                        vec![],        vec!["pull"]),
+            (SyncedPath::new(1, "grand/appraisal"      ), vec!["plastic", "dinosaurs"],  vec![],        vec![]),
+            (SyncedPath::new(1, "tight/earnings"       ), vec!["tree", "forest"],        vec![],        vec![]),
+        ];
+
+        files
+    }
+
+    fn make_repo<'a, I: IntoIterator<Item = &'a TaggedFile>>(
+        prefixes: Vec<PrefixMapping>,
+        iter: I,
+        use_remote_files: bool,
+    ) -> Repository {
+        let mut repo = Repository::new(prefixes);
+        for (file_path, combined, local, remote) in iter {
+            let tags = if use_remote_files {
+                remote.iter()
+            } else {
+                local.iter()
+            }
+            .chain(combined.iter())
+            .copied()
+            .collect();
+
+            repo.insert(file_path.clone(), tags);
+        }
+
+        repo
+    }
+
+    #[test]
+    fn compute_diff_results() {
+        let prefixes = mock_prefixes();
+        let files = mock_files();
+
+        let local_repo = make_repo(prefixes.clone(), &files, false);
+        let remote_repo = make_repo(prefixes, &files, true);
+
+        let mut diffs = local_repo.diff(remote_repo, Side::Both);
+
+        let diff_results_actual: Vec<_> = (&mut diffs).collect();
+        let diff_results_expected: Vec<_> = files
+            .iter()
+            .filter(|(_, _, local, remote)| !local.is_empty() || !remote.is_empty())
+            .collect();
+
+        assert_eq!(diff_results_actual.len(), diff_results_expected.len());
+        for (actual, expected) in std::iter::zip(diff_results_actual, diff_results_expected) {
+            let (file_path, _, left_only, right_only) = expected;
+            assert_eq!(actual.left_only, left_only.iter().copied().collect());
+            assert_eq!(actual.right_only, right_only.iter().copied().collect());
+            assert_eq!(actual.path, *file_path);
+        }
+    }
+
+    #[test]
+    fn compute_new_repo_with_both() {
+        compute_new_repo(Side::Both);
+    }
+
+    #[test]
+    fn compute_new_repo_with_left() {
+        compute_new_repo(Side::Left);
+    }
+
+    #[test]
+    fn compute_new_repo_with_right() {
+        compute_new_repo(Side::Right);
+    }
+
+    fn compute_new_repo(keep_action: Side) {
+        let prefixes = mock_prefixes();
+        let files = mock_files();
+
+        let local_repo = make_repo(prefixes.clone(), &files, false);
+        let remote_repo = make_repo(prefixes.clone(), &files, true);
+
+        let diffs = local_repo.diff(remote_repo, keep_action);
+        let new_repo = diffs.finish();
+        println!("{new_repo:?}");
+        assert_eq!(new_repo.prefixes, prefixes);
+        for (actual, expected) in std::iter::zip(new_repo.files, files) {
+            let (path, combined, local, remote) = expected;
+            let tags = match keep_action {
+                Side::Left => combined.into_iter().chain(local).collect(),
+                Side::Right => combined.into_iter().chain(remote).collect(),
+                Side::Both => combined.into_iter().chain(local).chain(remote).collect(),
+            };
+
+            assert_eq!(actual.1, tags, "Failed for file {}", path.path.display());
+        }
+    }
 }

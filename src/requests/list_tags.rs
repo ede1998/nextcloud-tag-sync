@@ -1,10 +1,10 @@
-use std::{borrow::Cow, error::Error};
+use std::borrow::Cow;
 
 use askama::Template;
 
 use bimap::BiMap;
 
-use super::{empty_as_none, parse, Parse, Request};
+use super::{empty_as_none, parse, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "load_tags.xml")]
@@ -23,7 +23,7 @@ impl Request for ListTags {
 impl Parse for ListTags {
     type Output = BiMap<u64, String>;
 
-    fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>> {
+    fn parse(input: &str) -> Result<Self::Output, DeserializeError> {
         let element: MultiStatus = parse(input)?;
 
         Ok(element

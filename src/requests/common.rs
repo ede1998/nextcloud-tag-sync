@@ -1,6 +1,7 @@
 use std::{borrow::Cow, error::Error};
 
 use askama::Template;
+use snafu::prelude::*;
 
 const USER: &str = "erik";
 const TOKEN: &str = include_str!("../../helper-scripts/nextcloud-token.txt");
@@ -23,7 +24,7 @@ impl Default for Connection {
 }
 
 impl Connection {
-    pub async fn request<T>(&self, request: T) -> Result<T::Output, Box<dyn Error>>
+    pub async fn request<T>(&self, request: T) -> Result<T::Output, RequestError>
     where
         T: Request + Parse,
     {
@@ -32,12 +33,14 @@ impl Connection {
             .client
             .request(method, request.url(&self.host, &self.user))
             .basic_auth(&self.user, Some(TOKEN))
-            .body(request.body()?)
+            .body(request.body().context(AskamaSnafu)?)
             .send()
-            .await?
+            .await
+            .context(ReqwestSnafu)?
             .text()
-            .await?;
-        T::parse(&payload)
+            .await
+            .context(ReqwestSnafu)?;
+        T::parse(&payload).context(DeserializeSnafu)
     }
 }
 
@@ -54,7 +57,7 @@ pub trait Request: Template {
 
 pub trait Parse {
     type Output;
-    fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>>;
+    fn parse(input: &str) -> Result<Self::Output, DeserializeError>;
 }
 
 pub fn empty_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
@@ -69,9 +72,19 @@ where
     }
 }
 
-type DeserializeError = serde_path_to_error::Error<quick_xml::DeError>;
+pub type DeserializeError = serde_path_to_error::Error<quick_xml::DeError>;
 
 pub fn parse<'de, T: serde::Deserialize<'de>>(input: &'de str) -> Result<T, DeserializeError> {
     let deserializer = &mut quick_xml::de::Deserializer::from_str(input);
     serde_path_to_error::deserialize(deserializer)
+}
+
+#[derive(Debug, Snafu)]
+pub enum RequestError {
+    #[snafu(display("Failed to render request template: {source}"))]
+    Askama { source: askama::Error },
+    #[snafu(display("Request failed: {source}"))]
+    Reqwest { source: reqwest::Error },
+    #[snafu(display("Failed to deserialize response: {source}"))]
+    Deserialize { source: DeserializeError },
 }

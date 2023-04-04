@@ -1,8 +1,8 @@
-use std::{borrow::Cow, error::Error};
+use std::borrow::Cow;
 
 use askama::Template;
 
-use super::{parse, Parse, Request};
+use super::{parse, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "list_files_with_tag.xml")]
@@ -33,7 +33,7 @@ impl Request for ListFilesWithTag {
 impl Parse for ListFilesWithTag {
     type Output = Vec<String>;
 
-    fn parse(input: &str) -> Result<Self::Output, Box<dyn Error>> {
+    fn parse(input: &str) -> Result<Self::Output, DeserializeError> {
         #[derive(Debug, serde_query::Deserialize)]
         struct MultiStatus {
             #[query(".response.[].href")]

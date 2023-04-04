@@ -1,10 +1,12 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, HashSet},
+    convert::Infallible,
     fmt::Debug,
     iter::Peekable,
     ops::Deref,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
@@ -58,6 +60,19 @@ struct TagDiff {
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Tags(HashSet<String>);
+
+impl FromStr for Tags {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let tags = s
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(Into::into)
+            .collect();
+        Ok(Self(tags))
+    }
+}
 
 impl FromIterator<String> for Tags {
     fn from_iter<T>(iter: T) -> Self
@@ -126,6 +141,20 @@ pub struct PrefixMapping {
     remote: PathBuf,
 }
 
+impl PrefixMapping {
+    pub fn new(local: PathBuf, remote: PathBuf) -> Self {
+        Self { local, remote }
+    }
+
+    pub fn local(&self) -> &Path {
+        &self.local
+    }
+
+    pub fn remote(&self) -> &Path {
+        &self.remote
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Repository {
     prefixes: Vec<PrefixMapping>,
@@ -158,6 +187,16 @@ impl Repository {
                     .ok()
             })
             .unwrap_or_else(|| panic!("missing prefix for {}", file.display()))
+    }
+
+    pub fn insert_local(&mut self, path: &Path, tags: Tags) {
+        let path = SyncedPath::from_local(&path, self);
+        self.insert(path, tags);
+    }
+
+    pub fn insert_remote(&mut self, path: &Path, tags: Tags) {
+        let path = SyncedPath::from_remote(&path, self);
+        self.insert(path, tags);
     }
 
     pub fn insert(&mut self, path: SyncedPath, tags: Tags) {

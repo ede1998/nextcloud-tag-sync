@@ -673,6 +673,8 @@ dependencies = [
  "serde-query",
  "serde_path_to_error",
  "tokio",
+ "walkdir",
+ "xattr",
 ]
 
 [[package]]
@@ -1524,4 +1526,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "xattr"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea263437ca03c1522846a4ddafbca2542d0ad5ed9b784909d4b27b76f62bc34a"
+dependencies = [
+ "libc",
 ]

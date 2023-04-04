@@ -16,3 +16,5 @@ serde = { version = "1.0.158", features = ["derive"] }
 serde-query = "0.2.0"
 serde_path_to_error = "0.1.11"
 tokio = { version = "1.26.0", features = ["full"] }
+walkdir = "2.3.3"
+xattr = "1.0.0"

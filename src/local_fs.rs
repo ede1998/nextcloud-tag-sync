@@ -2,9 +2,11 @@
 // find files with tags
 // construct repositories
 
-use std::{hint::unreachable_unchecked, path::PathBuf};
+use std::hint::unreachable_unchecked;
+use std::path::PathBuf;
 
-use snafu::{prelude::*, Whatever};
+use snafu::prelude::*;
+use snafu::Whatever;
 use tracing::error;
 use walkdir::{DirEntry, WalkDir};
 

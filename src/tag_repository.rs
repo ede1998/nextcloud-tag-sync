@@ -1,13 +1,11 @@
-use std::{
-    cmp::Ordering,
-    collections::{BTreeMap, HashSet},
-    convert::Infallible,
-    fmt::Debug,
-    iter::Peekable,
-    ops::Deref,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, HashSet};
+use std::convert::Infallible;
+use std::fmt::Debug;
+use std::iter::Peekable;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 struct PrefixMappingId(usize);

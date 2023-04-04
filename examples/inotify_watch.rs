@@ -1,4 +1,5 @@
-use futures::{channel::mpsc::channel, SinkExt, StreamExt};
+use futures::channel::mpsc::channel;
+use futures::{SinkExt, StreamExt};
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 

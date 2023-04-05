@@ -1,8 +1,8 @@
 use std::borrow::Cow;
-use std::error::Error;
 
 use askama::Template;
 use snafu::prelude::*;
+use tracing::{debug, trace};
 
 const USER: &str = "erik";
 const TOKEN: &str = include_str!("../../helper-scripts/nextcloud-token.txt");
@@ -29,10 +29,12 @@ impl Connection {
     where
         T: Request + Parse,
     {
+        let url = request.url(&self.host, &self.user);
         let method = reqwest::Method::from_bytes(request.method().as_bytes()).unwrap();
+        debug!("Starting request {method} {url}");
         let payload = self
             .client
-            .request(method, request.url(&self.host, &self.user))
+            .request(method, url)
             .basic_auth(&self.user, Some(TOKEN))
             .body(request.body().context(AskamaSnafu)?)
             .send()
@@ -41,6 +43,7 @@ impl Connection {
             .text()
             .await
             .context(ReqwestSnafu)?;
+        trace!("Received payload: {payload}");
         T::parse(&payload).context(DeserializeSnafu)
     }
 }

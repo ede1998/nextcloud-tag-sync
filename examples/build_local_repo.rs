@@ -1,4 +1,4 @@
-use nextcloud_tag_sync::{PrefixMapping, LocalFsWalker};
+use nextcloud_tag_sync::{LocalFsWalker, PrefixMapping};
 use snafu::Whatever;
 
 #[snafu::report]

@@ -2,7 +2,6 @@
 // find files with tags
 // construct repositories
 
-use std::hint::unreachable_unchecked;
 use std::path::PathBuf;
 
 use snafu::prelude::*;
@@ -10,7 +9,7 @@ use snafu::Whatever;
 use tracing::error;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{PrefixMapping, Repository, Tags};
+use crate::{IntoOk, PrefixMapping, Repository, Tags};
 
 pub struct LocalFsWalker<'a> {
     tag_property_name: String,
@@ -98,20 +97,4 @@ enum LocalFsError {
         path: PathBuf,
         source: std::string::FromUtf8Error,
     },
-}
-
-trait IntoOk {
-    fn into_ok(self) -> Self::T;
-    type T;
-}
-
-impl<T> IntoOk for Result<T, std::convert::Infallible> {
-    type T = T;
-    fn into_ok(self) -> T {
-        match self {
-            Ok(o) => o,
-            // safe because Infallible can never be instantiated
-            Err(_) => unsafe { unreachable_unchecked() },
-        }
-    }
 }

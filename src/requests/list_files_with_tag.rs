@@ -34,13 +34,18 @@ impl Parse for ListFilesWithTag {
     type Output = Vec<String>;
 
     fn parse(input: &str) -> Result<Self::Output, DeserializeError> {
-        #[derive(Debug, serde_query::Deserialize)]
+        #[derive(Debug, serde::Deserialize)]
         struct MultiStatus {
-            #[query(".response.[].href")]
-            files: Vec<String>,
+            #[serde(default)]
+            response: Vec<Response>,
         }
+        #[derive(Debug, serde::Deserialize)]
+        struct Response {
+            href: String,
+        }
+
         let element: MultiStatus = parse(input)?;
 
-        Ok(element.files)
+        Ok(element.response.into_iter().map(|r| r.href).collect())
     }
 }

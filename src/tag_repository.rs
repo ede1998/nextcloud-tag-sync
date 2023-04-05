@@ -128,7 +128,7 @@ impl Tags {
         }
     }
 
-    fn insert_all(&mut self, source: &Tags) {
+    pub fn insert_all(&mut self, source: &Tags) {
         self.0.extend(source.0.iter().cloned());
     }
 }
@@ -188,12 +188,12 @@ impl Repository {
     }
 
     pub fn insert_local(&mut self, path: &Path, tags: Tags) {
-        let path = SyncedPath::from_local(&path, self);
+        let path = SyncedPath::from_local(path, self);
         self.insert(path, tags);
     }
 
     pub fn insert_remote(&mut self, path: &Path, tags: Tags) {
-        let path = SyncedPath::from_remote(&path, self);
+        let path = SyncedPath::from_remote(path, self);
         self.insert(path, tags);
     }
 

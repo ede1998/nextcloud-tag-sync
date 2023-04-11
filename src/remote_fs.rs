@@ -4,10 +4,10 @@ use std::path::Path;
 
 use futures::StreamExt;
 use snafu::prelude::*;
-use snafu::Whatever;
 use tracing::debug;
 use tracing::error;
 
+use crate::requests::RequestError;
 use crate::Tags;
 use crate::{Connection, IntoOk, ListFilesWithTag, ListTags, PrefixMapping, Repository};
 
@@ -30,12 +30,12 @@ impl<'a> RemoteFsWalker<'a> {
         }
     }
 
-    pub async fn build_repository(&self) -> Result<Repository, Whatever> {
+    pub async fn build_repository(&self) -> Result<Repository, ListTagsError> {
         let tag_map = self
             .connection
             .request(ListTags)
             .await
-            .whatever_context("failed to list tags")?;
+            .context(ListTagsSnafu)?;
 
         debug!("Received mapping of {} tags", tag_map.len());
 
@@ -65,6 +65,12 @@ impl<'a> RemoteFsWalker<'a> {
         }
         Ok(repo)
     }
+}
+
+#[derive(Debug, Snafu)]
+#[snafu(display("Failed to list tags: {source}"))]
+pub struct ListTagsError {
+    pub source: RequestError,
 }
 
 #[derive(Debug, Default)]
@@ -102,14 +108,14 @@ mod tests {
     #[test]
     fn group_tags() {
         let files = (0..2000).map(|i| format!("/basic/{i}/bla"));
-        let files1 = (0..2000).map(|i| format!("/basic/{i}/blub"));
+        let files1 = (0..2000).map(|i| format!("/basic/{i}/blob"));
         let mut ftt = FileToTags::default();
         ftt.group_tags_by_file("tag", files.clone());
         ftt.group_tags_by_file("tag1", files.clone());
         ftt.group_tags_by_file("tag2", files.clone());
         ftt.group_tags_by_file("tag3", files);
         ftt.group_tags_by_file("tag3", files1);
-        let res: HashMap<_,_> = ftt.into_iter().collect();
+        let res: HashMap<_, _> = ftt.into_iter().collect();
         assert_eq!(res.len(), 4000);
         for tags in res.values() {
             assert!(tags.len() <= 4);

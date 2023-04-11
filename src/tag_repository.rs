@@ -7,6 +7,8 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use serde::{Serialize, Deserialize};
+
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 struct PrefixMappingId(usize);
 
@@ -133,7 +135,7 @@ impl Tags {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct PrefixMapping {
     local: PathBuf,
     remote: PathBuf,
@@ -334,12 +336,12 @@ impl DiffIterator {
 
 #[derive(Debug, Clone)]
 pub struct DiffResult {
-    path: SyncedPath,
-    left_only: Tags,
-    right_only: Tags,
+    pub path: SyncedPath,
+    pub left_only: Tags,
+    pub right_only: Tags,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Side {
     Left,
     Right,

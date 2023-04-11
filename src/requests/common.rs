@@ -4,27 +4,26 @@ use askama::Template;
 use snafu::prelude::*;
 use tracing::{debug, trace};
 
-const USER: &str = "erik";
-const TOKEN: &str = include_str!("../../helper-scripts/nextcloud-token.txt");
+use crate::Config;
 
 #[derive(Debug)]
 pub struct Connection {
     host: String,
     user: String,
+    token: String,
     client: reqwest::Client,
 }
 
-impl Default for Connection {
-    fn default() -> Self {
+impl Connection {
+    pub fn from_config(config: &Config) -> Self {
         Self {
             client: reqwest::Client::default(),
-            user: USER.to_owned(),
-            host: "https://cloud.erik-hennig.me".to_owned(),
+            user: config.user.clone(),
+            token: config.token.clone(),
+            host: config.nextcloud_instance.clone(),
         }
     }
-}
 
-impl Connection {
     pub async fn request<T>(&self, request: T) -> Result<T::Output, RequestError>
     where
         T: Request + Parse,
@@ -35,7 +34,7 @@ impl Connection {
         let payload = self
             .client
             .request(method, url)
-            .basic_auth(&self.user, Some(TOKEN))
+            .basic_auth(&self.user, Some(&self.token))
             .body(request.body().context(AskamaSnafu)?)
             .send()
             .await

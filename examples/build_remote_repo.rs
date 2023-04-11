@@ -1,12 +1,12 @@
 use std::error::Error;
 
-use nextcloud_tag_sync::{Connection, PrefixMapping, RemoteFsWalker};
+use nextcloud_tag_sync::{Connection, PrefixMapping, RemoteFsWalker, load_config};
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
     async fn m() -> Result<(), Box<dyn Error>> {
-        let connection = Connection::default();
+        let connection = Connection::from_config(&load_config()?);
 
         let prefixes = vec![
             PrefixMapping::new(

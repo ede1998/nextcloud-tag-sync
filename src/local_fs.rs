@@ -5,8 +5,7 @@
 use std::path::PathBuf;
 
 use snafu::prelude::*;
-use snafu::Whatever;
-use tracing::error;
+use tracing::{debug, error};
 use walkdir::{DirEntry, WalkDir};
 
 use crate::{IntoOk, PrefixMapping, Repository, Tags};
@@ -28,7 +27,7 @@ impl<'a> LocalFsWalker<'a> {
         self.tag_property_name = tag_property_name;
     }
 
-    pub fn build_repository(&self) -> Result<Repository, Whatever> {
+    pub fn build_repository(&self) -> Result<Repository, FileSystemLoopError> {
         let mut repo = Repository::new(self.prefixes.into());
         for prefix in self.prefixes {
             let walker = WalkDir::new(prefix.local());
@@ -39,16 +38,13 @@ impl<'a> LocalFsWalker<'a> {
                             repo.insert_local(&path, tags);
                         }
                     }
-                    Err(LocalFsError::IsDirectory { .. }) => {}
-                    Err(err) => {
-                        if let LocalFsError::WalkDir { ref source } = err {
-                            ensure_whatever!(
-                                source.loop_ancestor().is_none(),
-                                "Found file system loop."
-                            );
+                    Err(FileError::IsDirectory { .. }) => {}
+                    Err(err) => match err {
+                        FileError::WalkDir { source } if source.loop_ancestor().is_some() => {
+                            return Err(source).context(FileSystemLoopSnafu);
                         }
-                        error!("Skipping file. {err}");
-                    }
+                        err => error!("skipping file. {err}"),
+                    },
                 }
             }
         }
@@ -59,7 +55,7 @@ impl<'a> LocalFsWalker<'a> {
     fn get_tags_of_file(
         &self,
         entry: Result<DirEntry, walkdir::Error>,
-    ) -> Result<(PathBuf, Tags), LocalFsError> {
+    ) -> Result<(PathBuf, Tags), FileError> {
         let entry = entry.context(WalkDirSnafu)?;
         ensure!(
             entry.file_type().is_file(),
@@ -67,22 +63,29 @@ impl<'a> LocalFsWalker<'a> {
                 path: entry.into_path()
             }
         );
-        let tag = xattr::get(entry.path(), &self.tag_property_name)
-            .with_context(|_| XAttrSnafu {
-                path: entry.path().to_owned(),
-            })?
+        let path = entry.into_path();
+
+        debug!("reading tags of file {}", path.display());
+
+        let tag = xattr::get(&path, &self.tag_property_name)
+            .with_context(|_| XAttrSnafu { path: path.clone() })?
             .unwrap_or_default();
-        let tag = String::from_utf8(tag).with_context(|_| TagsNotUtf8Snafu {
-            path: entry.path().to_owned(),
-        })?;
+        let tag =
+            String::from_utf8(tag).with_context(|_| TagsNotUtf8Snafu { path: path.clone() })?;
 
         #[allow(unstable_name_collisions)]
-        Ok((entry.into_path(), tag.parse().into_ok()))
+        Ok((path, tag.parse().into_ok()))
     }
 }
 
 #[derive(Debug, Snafu)]
-enum LocalFsError {
+#[snafu(display("File system loop detected: {source}"))]
+pub struct FileSystemLoopError {
+    pub source: walkdir::Error,
+}
+
+#[derive(Debug, Snafu)]
+enum FileError {
     #[snafu(display("Path {} is a directory", path.display()))]
     IsDirectory { path: PathBuf },
     #[snafu(display("Failed to access path: {source}"))]

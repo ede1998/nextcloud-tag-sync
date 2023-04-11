@@ -1,5 +1,5 @@
 use nextcloud_tag_sync::{LocalFsWalker, PrefixMapping};
-use snafu::Whatever;
+use snafu::{ResultExt, Whatever};
 
 #[snafu::report]
 fn main() -> Result<(), Whatever> {
@@ -8,7 +8,9 @@ fn main() -> Result<(), Whatever> {
         PrefixMapping::new("/home/erik/Documents".into(), "irrelevant here".into()),
     ];
 
-    let repo = LocalFsWalker::new(&prefixes).build_repository()?;
+    let repo = LocalFsWalker::new(&prefixes)
+        .build_repository()
+        .whatever_context("local fs walker error")?;
     println!("{repo:?}");
 
     Ok(())

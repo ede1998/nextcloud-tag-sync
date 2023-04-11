@@ -31,21 +31,64 @@ impl Connection {
     {
         let url = request.url(&self.host, &self.user);
         let method = reqwest::Method::from_bytes(request.method().as_bytes()).unwrap();
+
+        let _url1 = url.clone();
+        let _method1 = method.clone();
+
         debug!("Starting request {method} {url}");
-        let payload = self
-            .client
-            .request(method, url)
-            .basic_auth(&self.user, Some(&self.token))
-            .body(request.body().context(AskamaSnafu)?)
-            .send()
-            .await
-            .context(ReqwestSnafu)?
-            .text()
-            .await
-            .context(ReqwestSnafu)?;
+        let payload = if false {
+            self.client
+                .request(method, url)
+                .basic_auth(&self.user, Some(&self.token))
+                .body(request.body().context(AskamaSnafu)?)
+                .send()
+                .await
+                .context(ReqwestSnafu)?
+                .text()
+                .await
+                .context(ReqwestSnafu)?
+        } else {
+            read_sample_data(method, url, request.body().unwrap())
+        };
         trace!("Received payload: {payload}");
+
+        if false {
+            update_sample_data(_method1, _url1, request.body().unwrap(), payload.clone()).await;
+        }
+
         T::parse(&payload).context(DeserializeSnafu)
     }
+}
+
+async fn update_sample_data(method: reqwest::Method, url: url::Url, body: String, payload: String) {
+    static COUNT: tokio::sync::Mutex<usize> = tokio::sync::Mutex::const_new(0);
+    let count = {
+        let mut cnt = COUNT.lock().await;
+        let x = *cnt;
+        *cnt += 1;
+        x
+    };
+    let mut f = std::fs::File::create(format!("request-{count}.txt")).unwrap();
+    use std::io::Write;
+    writeln!(f, "{method}").unwrap();
+    writeln!(f, "{url}").unwrap();
+    writeln!(f, "{body}").unwrap();
+    write!(f, "{}", payload).unwrap();
+}
+
+fn read_sample_data(method: reqwest::Method, url: url::Url, body: String) -> String {
+    use std::io::Read;
+    let start = format!("{method}\n{url}\n{body}\n");
+    for entry in std::fs::read_dir("sample-data").unwrap() {
+        let entry = entry.unwrap();
+        let mut f = std::fs::File::open(entry.path()).unwrap();
+        let mut content = String::new();
+        f.read_to_string(&mut content).unwrap();
+        if let Some(payload) = content.strip_prefix(&start) {
+            return payload.to_owned();
+        }
+    }
+    panic!("Failed to find file with {start}");
 }
 
 pub trait Request: Template {

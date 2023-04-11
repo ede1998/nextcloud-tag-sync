@@ -1,4 +1,5 @@
 target
 /helper-scripts
+/sample-data
 .vscode
 config.toml

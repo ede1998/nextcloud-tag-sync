@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use askama::Template;
+use url::Url;
 use snafu::prelude::*;
 use tracing::{debug, trace};
 
@@ -8,7 +9,7 @@ use crate::Config;
 
 #[derive(Debug)]
 pub struct Connection {
-    host: String,
+    host: Url,
     user: String,
     token: String,
     client: reqwest::Client,
@@ -50,8 +51,9 @@ impl Connection {
 pub trait Request: Template {
     fn method(&self) -> Cow<str>;
     fn endpoint(&self) -> Cow<str>;
-    fn url(&self, host: &str, _user: &str) -> String {
-        format!("{host}/remote.php/dav/{}", self.endpoint())
+    fn url(&self, host: &Url, _user: &str) -> Url {
+        let url = host.join("remote.php/dav").expect("failed to create URL");
+        url.join(&self.endpoint()).expect("failed to create URL")
     }
     fn body(&self) -> askama::Result<String> {
         self.render()

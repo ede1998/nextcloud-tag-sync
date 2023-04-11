@@ -2,6 +2,7 @@ use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
 };
+use url::Url;
 use serde::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};
 
@@ -12,7 +13,7 @@ pub struct Config {
     pub max_concurrent_requests: usize,
     pub keep_side_on_conflict: Side,
     pub prefixes: Vec<PrefixMapping>,
-    pub nextcloud_instance: String,
+    pub nextcloud_instance: Url,
     pub user: String,
     pub token: String,
 }
@@ -48,7 +49,7 @@ impl std::fmt::Display for Config {
         writeln!(
             f,
             "Nextcloud token: ...{}",
-            take_last_n_chars(&self.token, 5)
+            take_last_n_chars(&self.token, 3)
         )?;
         writeln!(f, "Mapped prefixes:")?;
         for prefix in &self.prefixes {
@@ -66,7 +67,7 @@ impl Default for Config {
             max_concurrent_requests: 10,
             prefixes: Default::default(),
             keep_side_on_conflict: Side::Both,
-            nextcloud_instance: "missing_nextcloud_instance".to_owned(),
+            nextcloud_instance: "https://missing_nextcloud_instance".try_into().expect("failed to create default url"),
             user: "missing_username".to_owned(),
             token: "missing_token".to_owned(),
         }

@@ -95,7 +95,7 @@ pub trait Request: Template {
     fn method(&self) -> Cow<str>;
     fn endpoint(&self) -> Cow<str>;
     fn url(&self, host: &Url, _user: &str) -> Url {
-        let url = host.join("remote.php/dav").expect("failed to create URL");
+        let url = host.join("remote.php/dav/").expect("failed to create URL");
         url.join(&self.endpoint()).expect("failed to create URL")
     }
     fn body(&self) -> askama::Result<String> {

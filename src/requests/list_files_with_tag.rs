@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use url::Url;
 use askama::Template;
+use url::Url;
 
 use super::{parse, DeserializeError, Parse, Request};
 

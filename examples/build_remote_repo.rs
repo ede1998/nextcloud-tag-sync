@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use nextcloud_tag_sync::{Connection, PrefixMapping, RemoteFsWalker, load_config};
+use nextcloud_tag_sync::{load_config, Connection, PrefixMapping, RemoteFsWalker};
 
 #[tokio::main]
 async fn main() {

@@ -2,11 +2,11 @@ use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
 };
-use url::Url;
 use serde::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};
+use url::Url;
 
-use crate::{take_last_n_chars, tag_repository::Side, PrefixMapping};
+use crate::{tag_repository::Side, take_last_n_chars, PrefixMapping};
 
 #[derive(Deserialize, Serialize)]
 pub struct Config {
@@ -67,7 +67,9 @@ impl Default for Config {
             max_concurrent_requests: 10,
             prefixes: Default::default(),
             keep_side_on_conflict: Side::Both,
-            nextcloud_instance: "https://missing_nextcloud_instance".try_into().expect("failed to create default url"),
+            nextcloud_instance: "https://missing_nextcloud_instance"
+                .try_into()
+                .expect("failed to create default url"),
             user: "missing_username".to_owned(),
             token: "missing_token".to_owned(),
         }

@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
 use askama::Template;
-use url::Url;
 use snafu::prelude::*;
 use tracing::{debug, trace};
+use url::Url;
 
 use crate::Config;
 

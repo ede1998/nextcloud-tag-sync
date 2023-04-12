@@ -74,6 +74,13 @@ impl FromStr for Tags {
     }
 }
 
+impl std::fmt::Display for Tags {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let tags = self.0.iter().map(Deref::deref).collect::<Vec<_>>().join(",");
+        f.write_str(&tags)
+    }
+}
+
 impl FromIterator<String> for Tags {
     fn from_iter<T>(iter: T) -> Self
     where
@@ -132,6 +139,10 @@ impl Tags {
 
     pub fn insert_all(&mut self, source: &Tags) {
         self.0.extend(source.0.iter().cloned());
+    }
+
+    pub fn insert_one(&mut self, tag: String) {
+        self.0.insert(tag);
     }
 }
 

@@ -58,6 +58,7 @@ struct TagDiff {
     right_only: Tags,
 }
 
+// TODO introduce Tag newtype for validation: only A-Z a-z 0-9 and - allowed
 #[derive(Clone, PartialEq, Eq)]
 pub struct Tags(HashSet<String>);
 

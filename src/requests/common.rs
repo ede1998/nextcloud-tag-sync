@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use askama::Template;
+use reqwest::header::CONTENT_TYPE;
 use snafu::prelude::*;
 use tracing::{debug, trace};
 use url::Url;
@@ -30,19 +31,22 @@ impl Connection {
         T: Request + Parse,
     {
         let url = request.url(&self.host, &self.user);
-        let method = reqwest::Method::from_bytes(request.method().as_bytes()).unwrap();
+        let method = request.method();
 
         let _url1 = url.clone();
         let _method1 = method.clone();
 
         debug!("Starting request {method} {url}");
-        let payload = if false {
+        let payload = if true {
             self.client
                 .request(method, url)
                 .basic_auth(&self.user, Some(&self.token))
+                .header(CONTENT_TYPE, T::MIME_TYPE)
                 .body(request.body().context(AskamaSnafu)?)
                 .send()
                 .await
+                .context(ReqwestSnafu)?
+                .error_for_status()
                 .context(ReqwestSnafu)?
                 .text()
                 .await
@@ -92,7 +96,7 @@ fn read_sample_data(method: reqwest::Method, url: url::Url, body: String) -> Str
 }
 
 pub trait Request: Template {
-    fn method(&self) -> Cow<str>;
+    fn method(&self) -> reqwest::Method;
     fn endpoint(&self) -> Cow<str>;
     fn url(&self, host: &Url, _user: &str) -> Url {
         let url = host.join("remote.php/dav/").expect("failed to create URL");
@@ -118,6 +122,10 @@ where
         None | Some("") => Ok(None),
         Some(s) => s.parse().map(Some).map_err(serde::de::Error::custom),
     }
+}
+
+pub fn str_to_method(method: &str) -> reqwest::Method {
+    method.try_into().expect("failed to create HTTP method")
 }
 
 pub type DeserializeError = serde_path_to_error::Error<quick_xml::DeError>;

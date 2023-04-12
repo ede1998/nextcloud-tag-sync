@@ -4,15 +4,15 @@ use askama::Template;
 
 use bimap::BiMap;
 
-use super::{empty_as_none, parse, DeserializeError, Parse, Request};
+use super::{empty_as_none, parse, str_to_method, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "load_tags.xml")]
 pub struct ListTags;
 
 impl Request for ListTags {
-    fn method(&self) -> Cow<str> {
-        "PROPFIND".into()
+    fn method(&self) -> reqwest::Method {
+        str_to_method("PROPFIND")
     }
 
     fn endpoint(&self) -> Cow<str> {

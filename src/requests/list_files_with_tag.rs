@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use askama::Template;
 use url::Url;
 
-use super::{parse, DeserializeError, Parse, Request};
+use super::{common::str_to_method, parse, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "list_files_with_tag.xml")]
@@ -18,8 +18,8 @@ impl ListFilesWithTag {
 }
 
 impl Request for ListFilesWithTag {
-    fn method(&self) -> Cow<str> {
-        "REPORT".into()
+    fn method(&self) -> reqwest::Method {
+        str_to_method("REPORT")
     }
 
     fn endpoint(&self) -> Cow<str> {

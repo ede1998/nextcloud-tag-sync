@@ -1,0 +1,6 @@
+{
+    "userVisible": true,
+    "userAssignable": true,
+    "canAssign": true,
+    "name": "{{ tag }}"
+}

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use askama::Template;
 use reqwest::header::CONTENT_TYPE;
-use snafu::prelude::*;
+use snafu::{prelude::*, ResultExt};
 use tracing::{debug, trace};
 use url::Url;
 
@@ -32,17 +32,27 @@ impl Connection {
     {
         let url = request.url(&self.host, &self.user);
         let method = request.method();
+        let (body, mime_type) = match request.body() {
+            Some(body) => (body.content.context(AskamaSnafu)?, body.mime_type),
+            None => (String::new(), ""),
+        };
 
         let _url1 = url.clone();
         let _method1 = method.clone();
+        let _body1 = body.clone();
 
         debug!("Starting request {method} {url}");
         let payload = if true {
-            self.client
+            let mut request_builder = self
+                .client
                 .request(method, url)
-                .basic_auth(&self.user, Some(&self.token))
-                .header(CONTENT_TYPE, T::MIME_TYPE)
-                .body(request.body().context(AskamaSnafu)?)
+                .basic_auth(&self.user, Some(&self.token));
+
+            if !body.is_empty() {
+                request_builder = request_builder.header(CONTENT_TYPE, mime_type).body(body);
+            }
+
+            request_builder
                 .send()
                 .await
                 .context(ReqwestSnafu)?
@@ -52,19 +62,19 @@ impl Connection {
                 .await
                 .context(ReqwestSnafu)?
         } else {
-            read_sample_data(method, url, request.body().unwrap())
+            read_sample_data(method, url, &body)
         };
         trace!("Received payload: {payload}");
 
         if false {
-            update_sample_data(_method1, _url1, request.body().unwrap(), payload.clone()).await;
+            update_sample_data(_method1, _url1, &_body1, &payload).await;
         }
 
         T::parse(&payload).context(DeserializeSnafu)
     }
 }
 
-async fn update_sample_data(method: reqwest::Method, url: url::Url, body: String, payload: String) {
+async fn update_sample_data(method: reqwest::Method, url: url::Url, body: &str, payload: &str) {
     static COUNT: tokio::sync::Mutex<usize> = tokio::sync::Mutex::const_new(0);
     let count = {
         let mut cnt = COUNT.lock().await;
@@ -80,7 +90,7 @@ async fn update_sample_data(method: reqwest::Method, url: url::Url, body: String
     write!(f, "{}", payload).unwrap();
 }
 
-fn read_sample_data(method: reqwest::Method, url: url::Url, body: String) -> String {
+fn read_sample_data(method: reqwest::Method, url: url::Url, body: &str) -> String {
     use std::io::Read;
     let start = format!("{method}\n{url}\n{body}\n");
     for entry in std::fs::read_dir("sample-data").unwrap() {
@@ -95,15 +105,28 @@ fn read_sample_data(method: reqwest::Method, url: url::Url, body: String) -> Str
     panic!("Failed to find file with {start}");
 }
 
-pub trait Request: Template {
+pub trait Request {
     fn method(&self) -> reqwest::Method;
     fn endpoint(&self) -> Cow<str>;
     fn url(&self, host: &Url, _user: &str) -> Url {
         let url = host.join("remote.php/dav/").expect("failed to create URL");
         url.join(&self.endpoint()).expect("failed to create URL")
     }
-    fn body(&self) -> askama::Result<String> {
-        self.render()
+
+    fn body(&self) -> Option<Body>;
+}
+
+pub struct Body {
+    pub content: askama::Result<String>,
+    pub mime_type: &'static str,
+}
+
+impl<T: Template> From<&T> for Body {
+    fn from(value: &T) -> Self {
+        Body {
+            content: value.render(),
+            mime_type: T::MIME_TYPE,
+        }
     }
 }
 

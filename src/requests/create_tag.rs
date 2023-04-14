@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use askama::Template;
 
-use super::{DeserializeError, Parse, Request};
+use super::{Body, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "create_tag.json", escape = "none")]
@@ -23,6 +23,10 @@ impl Request for CreateTag {
 
     fn endpoint(&self) -> Cow<str> {
         "systemtags".into()
+    }
+
+    fn body(&self) -> Option<Body> {
+        Some(self.into())
     }
 }
 

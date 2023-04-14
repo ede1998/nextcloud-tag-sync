@@ -4,7 +4,7 @@ use askama::Template;
 
 use bimap::BiMap;
 
-use super::{empty_as_none, parse, str_to_method, DeserializeError, Parse, Request};
+use super::{empty_as_none, parse, str_to_method, Body, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "load_tags.xml")]
@@ -17,6 +17,10 @@ impl Request for ListTags {
 
     fn endpoint(&self) -> Cow<str> {
         "systemtags".into()
+    }
+
+    fn body(&self) -> Option<Body> {
+        Some(self.into())
     }
 }
 

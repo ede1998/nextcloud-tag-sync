@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use askama::Template;
 use url::Url;
 
-use super::{common::str_to_method, parse, DeserializeError, Parse, Request};
+use super::{common::str_to_method, parse, Body, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "list_files_with_tag.xml")]
@@ -29,6 +29,10 @@ impl Request for ListFilesWithTag {
     fn url(&self, host: &Url, user: &str) -> Url {
         let suffix = format!("remote.php/dav/{}/{user}", self.endpoint());
         host.join(&suffix).expect("failed to create URL")
+    }
+
+    fn body(&self) -> Option<Body> {
+        Some(self.into())
     }
 }
 

@@ -21,6 +21,14 @@ macro_rules! newtype {
                 Self(value)
             }
         }
+
+        impl std::str::FromStr for $name {
+            type Err = <u64 as std::str::FromStr>::Err;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                s.parse().map(Self)
+            }
+
+        }
     };
 }
 

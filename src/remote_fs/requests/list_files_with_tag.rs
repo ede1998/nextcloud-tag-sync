@@ -3,17 +3,19 @@ use std::borrow::Cow;
 use askama::Template;
 use url::Url;
 
+use crate::TagId;
+
 use super::{common::str_to_method, parse, Body, DeserializeError, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "list_files_with_tag.xml")]
 pub struct ListFilesWithTag {
-    tag_id: u64,
+    tag: TagId,
 }
 
 impl ListFilesWithTag {
-    pub fn new(tag_id: u64) -> Self {
-        Self { tag_id }
+    pub fn new(tag: TagId) -> Self {
+        Self { tag }
     }
 }
 

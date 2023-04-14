@@ -11,6 +11,6 @@ pub use helper::ErrorCollection;
 pub use local_fs::{FileSystemLoopError, LocalFsWalker};
 pub use remote_fs::{
     Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFsWalker,
-    TagFile, TagId,
+    TagFile, TagId, UntagFile,
 };
 pub use tag_repository::{PrefixMapping, Repository, Tags};

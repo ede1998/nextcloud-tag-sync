@@ -3,6 +3,6 @@
     xmlns:oc="http://owncloud.org/ns"
     xmlns:nc="http://nextcloud.org/ns">
     <oc:filter-rules>
-        <oc:systemtag>{{ tag_id }}</oc:systemtag>
+        <oc:systemtag>{{ tag }}</oc:systemtag>
     </oc:filter-rules>
 </oc:filter-files>

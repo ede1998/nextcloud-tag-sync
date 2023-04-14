@@ -4,6 +4,8 @@ use askama::Template;
 
 use bimap::BiMap;
 
+use crate::TagId;
+
 use super::{empty_as_none, parse, str_to_method, Body, DeserializeError, Parse, Request};
 
 #[derive(Template)]
@@ -25,7 +27,7 @@ impl Request for ListTags {
 }
 
 impl Parse for ListTags {
-    type Output = BiMap<u64, String>;
+    type Output = BiMap<TagId, String>;
 
     fn parse(input: &str) -> Result<Self::Output, DeserializeError> {
         let element: MultiStatus = parse(input)?;
@@ -56,7 +58,7 @@ struct MultiStatus {
 #[serde(rename_all = "kebab-case")]
 struct Prop {
     #[serde(deserialize_with = "empty_as_none")]
-    id: Option<u64>,
+    id: Option<TagId>,
     display_name: Option<String>,
     #[serde(deserialize_with = "empty_as_none")]
     user_visible: Option<bool>,
@@ -75,6 +77,6 @@ mod tests {
         assert_eq!(tags.len(), 237);
         assert!(tags
             .iter()
-            .any(|(&id, name)| id == 73 && name == "Architecture"))
+            .any(|(&id, name)| id == TagId::from(73) && name == "Architecture"))
     }
 }

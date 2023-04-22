@@ -4,7 +4,7 @@ use askama::Template;
 
 use bimap::BiMap;
 
-use crate::TagId;
+use crate::{Tag, TagId};
 
 use super::{empty_as_none, parse, str_to_method, Body, DeserializeError, Parse, Request};
 
@@ -27,7 +27,7 @@ impl Request for ListTags {
 }
 
 impl Parse for ListTags {
-    type Output = BiMap<TagId, String>;
+    type Output = BiMap<TagId, Tag>;
 
     fn parse(input: &str) -> Result<Self::Output, DeserializeError> {
         let element: MultiStatus = parse(input)?;
@@ -42,7 +42,8 @@ impl Parse for ListTags {
                     return None;
                 }
 
-                prop.id.zip(prop.display_name)
+                let tag_name = prop.display_name.and_then(|n| Tag::new_or_log_error(&n));
+                prop.id.zip(tag_name)
             })
             .collect())
     }
@@ -69,14 +70,16 @@ struct Prop {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_log::test;
 
     #[test]
     fn deserialize_all_tags() {
         let input = include_str!("../../../helper-scripts/all_tags.xml");
         let tags = ListTags::parse(input).unwrap();
+        let arch: Tag = "Architecture".parse().unwrap();
         assert_eq!(tags.len(), 237);
         assert!(tags
             .iter()
-            .any(|(&id, name)| id == TagId::from(73) && name == "Architecture"))
+            .any(|(&id, name)| id == TagId::from(73) && name == &arch))
     }
 }

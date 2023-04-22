@@ -5,6 +5,7 @@ mod remote_fs;
 mod tag_repository;
 
 use helper::{take_last_n_chars, IntoOk};
+use tag_repository::SyncedPath;
 
 pub use config::{load_config, Config, ConfigError};
 pub use helper::ErrorCollection;
@@ -13,4 +14,4 @@ pub use remote_fs::{
     Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFsWalker,
     TagFile, TagId, UntagFile,
 };
-pub use tag_repository::{PrefixMapping, Repository, Tags};
+pub use tag_repository::{PrefixMapping, Repository, Tags, Tag};

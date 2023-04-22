@@ -8,8 +8,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tag = xattr::get(file_path, tag_name)?.unwrap_or_default();
     let tag = String::from_utf8(tag)?;
     let mut tag: Tags = tag.parse()?;
-    tag.insert_one("anotherone".to_owned());
-    tag.insert_one("yay".to_owned());
+    tag.insert_one("another-one".parse()?);
+    tag.insert_one("yay".parse()?);
     let stringified_tags = tag.to_string();
     xattr::set(file_path, tag_name, stringified_tags.as_bytes())?;
     Ok(())

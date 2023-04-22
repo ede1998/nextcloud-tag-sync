@@ -8,6 +8,8 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
+use snafu::{ensure, Snafu};
+use tracing::error;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 struct PrefixMappingId(usize);
@@ -58,19 +60,86 @@ struct TagDiff {
     right_only: Tags,
 }
 
-// TODO introduce Tag newtype for validation: only A-Z a-z 0-9 and - allowed
+#[derive(Debug, Snafu)]
+pub enum TagParseError {
+    #[snafu(display(
+        "some characters not allowed in tag: {}",
+        CharacterPrintHelper(invalid)
+    ))]
+    InvalidCharacters { invalid: Vec<(usize, char)> },
+    #[snafu(display("tag may not be empty"))]
+    EmptyTag,
+}
+
+struct CharacterPrintHelper<'a>(&'a [(usize, char)]);
+
+impl<'a> std::fmt::Display for CharacterPrintHelper<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut next = self.0.iter().peekable();
+        while let Some((position, character)) = next.next() {
+            write!(f, "{character} at {position}")?;
+            if next.peek().is_some() {
+                f.write_str(", ")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Tag(String);
+
+impl Tag {
+    pub(crate) fn new_or_log_error(s: &str) -> Option<Self> {
+        s.parse()
+            .map_err(|err| {
+                error!("Invalid tag name '{s}': {err}");
+                err
+            })
+            .ok()
+    }
+}
+
+impl std::fmt::Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl Deref for Tag {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromStr for Tag {
+    type Err = TagParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ensure!(!s.is_empty(), EmptyTagSnafu);
+
+        let invalid: Vec<_> = s
+            .chars()
+            .enumerate()
+            .filter(|(_, c)| !c.is_alphanumeric() && !"-–.' _".contains(*c))
+            .collect();
+
+        ensure!(invalid.is_empty(), InvalidCharactersSnafu { invalid });
+
+        Ok(Self(s.to_owned()))
+    }
+}
+
 #[derive(Clone, PartialEq, Eq)]
-pub struct Tags(HashSet<String>);
+pub struct Tags(HashSet<Tag>);
 
 impl FromStr for Tags {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tags = s
-            .split(',')
-            .filter(|s| !s.is_empty())
-            .map(Into::into)
-            .collect();
+        let tags = s.split(',').filter_map(Tag::new_or_log_error).collect();
         Ok(Self(tags))
     }
 }
@@ -92,7 +161,11 @@ impl FromIterator<String> for Tags {
     where
         T: IntoIterator<Item = String>,
     {
-        Tags(iter.into_iter().collect())
+        Tags(
+            iter.into_iter()
+                .filter_map(|t| Tag::new_or_log_error(&t))
+                .collect(),
+        )
     }
 }
 
@@ -101,12 +174,12 @@ impl<'a> FromIterator<&'a str> for Tags {
     where
         T: IntoIterator<Item = &'a str>,
     {
-        Tags(iter.into_iter().map(ToOwned::to_owned).collect())
+        Tags(iter.into_iter().filter_map(Tag::new_or_log_error).collect())
     }
 }
 
 impl Deref for Tags {
-    type Target = HashSet<String>;
+    type Target = HashSet<Tag>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -147,7 +220,7 @@ impl Tags {
         self.0.extend(source.0.iter().cloned());
     }
 
-    pub fn insert_one(&mut self, tag: String) {
+    pub fn insert_one(&mut self, tag: Tag) {
         self.0.insert(tag);
     }
 }

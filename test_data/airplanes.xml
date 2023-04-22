@@ -1,0 +1,1053 @@
+<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns">
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-16T17-15-28.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1220518</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-17T03-19-48.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1220539</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-22T16-37-40.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1226146</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-26T14-19-00.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1231909</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T12-36-56.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233013</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T12-38-53.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233016</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T12-53-21.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233229</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T12-53-53.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233235</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T12-58-10.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233247</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T13-03-10.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233253</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T13-03-33.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233259</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T13-03-36.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233262</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-27T13-05-37.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233271</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-29T17-54-38.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233694</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-30T11-34-21.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233769</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-30T18-55-42.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233793</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-31T01-04-55.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>1233808</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Historisch/pe25061.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>168757</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Historisch/z10341.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>169393</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/17x26692.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>206269</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/lf01151a.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>208045</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/lf01707a.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>208675</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/lf01858a.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>209119</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/lf01900a.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>209236</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/lf01925a.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>209296</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/lf31022b.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>209644</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/lh01080a.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>210286</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/pe24091.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>214447</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/pe24575.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>214723</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/pe25420.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>215128</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/logos/cliparts/Menschen/Mutter_und_Vater/z1179.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>215845</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-02-59.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34934</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-04-07.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34937</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-03-18.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34940</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-04-21.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34943</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-04-56.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34946</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-05-03.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34949</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-05-24.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34955</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-06-50.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34958</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-06-59.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34961</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-07-25.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34964</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-07-19.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34967</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-07-31.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34970</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-07-49.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34973</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-07-44.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34976</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-11-37.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34991</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-11-23.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>34994</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-12-35.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>35003</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-13-25.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>35006</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-12-49.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>35009</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2012/2012-10-28T12-31-52.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>36839</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T13-05-52.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42509</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T13-05-56.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42512</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T13-06-27.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42515</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T13-06-55.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42518</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-02-37.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42524</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-03-44.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42527</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-03-51.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42530</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-05-56.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42533</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-10-46.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42536</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-14-54.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42539</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-33-03.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42551</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-37-23.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42554</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T14-46-28.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42557</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T15-10-55.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42566</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T15-11-00.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42569</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-41-20.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42596</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-41-34.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42602</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-43-32.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42605</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-42-16.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42608</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-43-37.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42611</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-43-54.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42614</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-47-25.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42626</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-49-31.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42632</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-49-42.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42638</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T18-51-47.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42641</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T19-22-06.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42653</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T19-23-10.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42659</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T19-23-30-1.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42665</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T19-23-30.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42668</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T22-17-57.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42695</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T23-56-17.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42701</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-08-31T23-57-33.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42704</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-01T00-05-28.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42710</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-01T00-11-00.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42713</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-01T00-05-29.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42716</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-01T00-21-03.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42725</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-01T00-56-58.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42731</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-01T01-00-56.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42740</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-01T01-00-57.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>42743</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-02T10-37-37.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>43226</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-05T10-54-09.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>45479</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-05T10-54-12-1.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>45482</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-05T10-54-12.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>45491</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2019/2019-09-25T18-41-26.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>55475</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T10-42-22.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58535</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-46-12.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58958</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-49-59.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58964</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-09.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58970</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-19.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58973</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-27.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58976</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-25.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58979</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-31.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58982</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-37.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58985</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-42.jpg</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>58988</oc:fileid>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+</d:multistatus>

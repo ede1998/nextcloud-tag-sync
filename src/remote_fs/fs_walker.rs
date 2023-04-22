@@ -50,7 +50,7 @@ impl<'a> RemoteFsWalker<'a> {
                 match result {
                     Ok(files) => {
                         debug!("Processing tag {tag} with {} files", files.len());
-                        tags.group_tags_by_file(tag, files);
+                        tags.group_tags_by_file(tag, files.into_iter().map(|f| f.1));
                     }
                     Err(err) => error!("Failed to fetch file for tag {tag}: {err}"),
                 }

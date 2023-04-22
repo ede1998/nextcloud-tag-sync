@@ -2,6 +2,9 @@
 <oc:filter-files xmlns:d="DAV:"
     xmlns:oc="http://owncloud.org/ns"
     xmlns:nc="http://nextcloud.org/ns">
+    <d:prop>
+        <oc:fileid />
+    </d:prop>
     <oc:filter-rules>
         <oc:systemtag>{{ tag }}</oc:systemtag>
     </oc:filter-rules>

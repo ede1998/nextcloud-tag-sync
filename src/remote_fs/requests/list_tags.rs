@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn deserialize_all_tags() {
-        let input = include_str!("../../../helper-scripts/all_tags.xml");
+        let input = include_str!("../../../test_data/all_tags.xml");
         let tags = ListTags::parse(&HeaderMap::new(), input).unwrap();
         let arch: Tag = "Architecture".parse().unwrap();
         assert_eq!(tags.len(), 237);

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use askama::Template;
-use reqwest::header::CONTENT_TYPE;
+use reqwest::header::{CONTENT_TYPE, HeaderMap};
 use snafu::{prelude::*, ResultExt};
 use tracing::{debug, trace};
 use url::Url;
@@ -26,7 +26,7 @@ impl Connection {
         }
     }
 
-    pub async fn request<T>(&self, request: T) -> Result<T::Output, RequestError>
+    pub async fn request<T>(&self, request: T) -> Result<T::Output, RequestError<T::Error>>
     where
         T: Request + Parse,
     {
@@ -42,7 +42,7 @@ impl Connection {
         let _body1 = body.clone();
 
         debug!("Starting request {method} {url}");
-        let payload = if true {
+        let (payload, headers) = if true {
             let mut request_builder = self
                 .client
                 .request(method, url)
@@ -52,25 +52,31 @@ impl Connection {
                 request_builder = request_builder.header(CONTENT_TYPE, mime_type).body(body);
             }
 
-            request_builder
+            let response = request_builder
                 .send()
                 .await
                 .context(ReqwestSnafu)?
                 .error_for_status()
-                .context(ReqwestSnafu)?
+                .context(ReqwestSnafu)?;
+
+            let headers = response.headers().clone();
+            let body = response
                 .text()
                 .await
-                .context(ReqwestSnafu)?
+                .context(ReqwestSnafu)?;
+
+            (body, headers)
         } else {
-            read_sample_data(method, url, &body)
+            //read_sample_data(method, url, &body)
+            todo!()
         };
-        trace!("Received payload: {payload}");
+        trace!("Received payload {payload} and headers {headers:?}");
 
         if false {
             update_sample_data(_method1, _url1, &_body1, &payload).await;
         }
 
-        T::parse(&payload).context(DeserializeSnafu)
+        T::parse(&headers, &payload).context(DeserializeSnafu)
     }
 }
 
@@ -132,7 +138,8 @@ impl<T: Template> From<&T> for Body {
 
 pub trait Parse {
     type Output;
-    fn parse(input: &str) -> Result<Self::Output, DeserializeError>;
+    type Error: snafu::Error + 'static;
+    fn parse(headers: &HeaderMap, body: &str) -> Result<Self::Output, Self::Error>;
 }
 
 pub fn empty_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
@@ -159,11 +166,11 @@ pub fn parse<'de, T: serde::Deserialize<'de>>(input: &'de str) -> Result<T, Dese
 }
 
 #[derive(Debug, Snafu)]
-pub enum RequestError {
+pub enum RequestError<E: std::fmt::Display + std::error::Error + 'static> {
     #[snafu(display("Failed to render request template: {source}"))]
     Askama { source: askama::Error },
     #[snafu(display("Request failed: {source}"))]
     Reqwest { source: reqwest::Error },
     #[snafu(display("Failed to deserialize response: {source}"))]
-    Deserialize { source: DeserializeError },
+    Deserialize { source: E },
 }

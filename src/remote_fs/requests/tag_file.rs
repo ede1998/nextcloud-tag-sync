@@ -1,6 +1,8 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, convert::Infallible};
 
-use super::{Body, DeserializeError, Parse, Request};
+use reqwest::header::HeaderMap;
+
+use super::{Body, Parse, Request};
 use crate::remote_fs::{FileId, TagId};
 
 pub struct TagFile {
@@ -30,8 +32,9 @@ impl Request for TagFile {
 
 impl Parse for TagFile {
     type Output = ();
+    type Error = Infallible;
 
-    fn parse(_: &str) -> Result<Self::Output, DeserializeError> {
+    fn parse(_: &HeaderMap, _: &str) -> Result<Self::Output, Self::Error> {
         // We don't expect anything here and if we get sth because
         // of an error (4XX/5XX), it's already handled prior.
         Ok(())

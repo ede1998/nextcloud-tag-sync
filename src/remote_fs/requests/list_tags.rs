@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use askama::Template;
 
 use bimap::BiMap;
+use reqwest::header::HeaderMap;
 
 use crate::{Tag, TagId};
 
@@ -28,8 +29,9 @@ impl Request for ListTags {
 
 impl Parse for ListTags {
     type Output = BiMap<TagId, Tag>;
+    type Error = DeserializeError;
 
-    fn parse(input: &str) -> Result<Self::Output, DeserializeError> {
+    fn parse(_: &HeaderMap, input: &str) -> Result<Self::Output, Self::Error> {
         let element: MultiStatus = parse(input)?;
 
         Ok(element
@@ -75,7 +77,7 @@ mod tests {
     #[test]
     fn deserialize_all_tags() {
         let input = include_str!("../../../helper-scripts/all_tags.xml");
-        let tags = ListTags::parse(input).unwrap();
+        let tags = ListTags::parse(&HeaderMap::new(), input).unwrap();
         let arch: Tag = "Architecture".parse().unwrap();
         assert_eq!(tags.len(), 237);
         assert!(tags

@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use askama::Template;
+use reqwest::header::HeaderMap;
 use url::Url;
 
 use crate::TagId;
@@ -40,8 +41,9 @@ impl Request for ListFilesWithTag {
 
 impl Parse for ListFilesWithTag {
     type Output = Vec<String>;
+    type Error = DeserializeError;
 
-    fn parse(input: &str) -> Result<Self::Output, DeserializeError> {
+    fn parse(_: &HeaderMap, input: &str) -> Result<Self::Output, Self::Error> {
         #[derive(Debug, serde::Deserialize)]
         struct MultiStatus {
             #[serde(default)]

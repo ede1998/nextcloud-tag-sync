@@ -7,6 +7,7 @@ use snafu::prelude::*;
 use tracing::debug;
 use tracing::error;
 
+use super::DeserializeError;
 use super::RequestError;
 use crate::{Connection, IntoOk, ListFilesWithTag, ListTags, PrefixMapping, Repository, Tags};
 
@@ -69,7 +70,7 @@ impl<'a> RemoteFsWalker<'a> {
 #[derive(Debug, Snafu)]
 #[snafu(display("Failed to list tags: {source}"))]
 pub struct ListTagsError {
-    pub source: RequestError,
+    pub source: RequestError<DeserializeError>,
 }
 
 #[derive(Debug, Default)]

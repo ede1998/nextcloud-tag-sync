@@ -2,12 +2,15 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::path::Path;
 
+use bimap::BiMap;
 use futures::StreamExt;
 use snafu::prelude::*;
 use tracing::debug;
 use tracing::error;
+use tracing::warn;
 
-use super::{DeserializeError, RequestError, RemoteFs};
+use super::{DeserializeError, RemoteFs, RequestError};
+use crate::FileId;
 use crate::{Connection, IntoOk, ListFilesWithTag, ListTags, PrefixMapping, Repository, Tags};
 
 pub struct RemoteFsWalker<'a> {
@@ -38,7 +41,7 @@ impl<'a> RemoteFsWalker<'a> {
 
         debug!("Received mapping of {} tags", tag_map.len());
 
-        let tags = futures::stream::iter(&tag_map)
+        let file_tag_helper = futures::stream::iter(&tag_map)
             .map(|(id, tag)| async move {
                 (
                     tag,
@@ -46,11 +49,11 @@ impl<'a> RemoteFsWalker<'a> {
                 )
             })
             .buffer_unordered(self.max_concurrent_requests)
-            .fold(FileToTags::default(), |mut tags, (tag, result)| {
+            .fold(FileTagHelper::default(), |mut tags, (tag, result)| {
                 match result {
                     Ok(files) => {
                         debug!("Processing tag {tag} with {} files", files.len());
-                        tags.group_tags_by_file(tag, files.into_iter().map(|f| f.1));
+                        tags.group_tags_by_file(tag, files);
                     }
                     Err(err) => error!("Failed to fetch file for tag {tag}: {err}"),
                 }
@@ -59,13 +62,19 @@ impl<'a> RemoteFsWalker<'a> {
             .await;
 
         let mut repo = Repository::new(self.prefixes.into());
-        for (file, tags) in tags {
-            repo.insert_remote(Path::new(&file), tags);
+        let mut files = BiMap::with_capacity(file_tag_helper.file_ids.len());
+        for (file, tags) in file_tag_helper.file_tags {
+            let synced_path = repo.insert_remote(Path::new(&file), tags);
+            let Some(&id) = file_tag_helper.file_ids.get_by_right(&file) else {
+                warn!("Missing id for file {file}");
+                continue;
+            };
+            files.insert(id, synced_path);
         }
 
         let fs = RemoteFs {
             tags: tag_map,
-            files: todo!(),
+            files,
         };
 
         Ok((repo, fs))
@@ -79,14 +88,22 @@ pub struct ListTagsError {
 }
 
 #[derive(Debug, Default)]
-struct FileToTags(HashMap<String, Tags>);
+struct FileTagHelper {
+    file_ids: BiMap<FileId, String>,
+    file_tags: HashMap<String, Tags>,
+}
 
-impl FileToTags {
-    fn group_tags_by_file<I: IntoIterator<Item = String>>(&mut self, tag: &str, files: I) {
+impl FileTagHelper {
+    fn group_tags_by_file<I: IntoIterator<Item = (FileId, String)>>(
+        &mut self,
+        tag: &str,
+        files: I,
+    ) {
         #[allow(unstable_name_collisions)]
         let tag: Tags = tag.parse().into_ok();
-        for file in files {
-            match self.0.entry(file) {
+        for (id, file) in files {
+            self.file_ids.insert(id, file.clone());
+            match self.file_tags.entry(file) {
                 Entry::Occupied(mut entry) => entry.get_mut().insert_all(&tag),
                 Entry::Vacant(entry) => {
                     entry.insert(tag.clone());
@@ -96,34 +113,31 @@ impl FileToTags {
     }
 }
 
-impl IntoIterator for FileToTags {
-    type Item = (String, Tags);
-
-    type IntoIter = std::collections::hash_map::IntoIter<String, Tags>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn group_tags() {
-        let files = (0..2000).map(|i| format!("/basic/{i}/bla"));
-        let files1 = (0..2000).map(|i| format!("/basic/{i}/blob"));
-        let mut ftt = FileToTags::default();
+        let files = (0..2000).map(|i| (FileId::from(i), format!("/basic/{i}/bla")));
+        let files1 = (2000..4000).map(|i| (FileId::from(i), format!("/basic/{i}/blob")));
+        let mut ftt = FileTagHelper::default();
+
         ftt.group_tags_by_file("tag", files.clone());
         ftt.group_tags_by_file("tag1", files.clone());
         ftt.group_tags_by_file("tag2", files.clone());
         ftt.group_tags_by_file("tag3", files);
         ftt.group_tags_by_file("tag3", files1);
-        let res: HashMap<_, _> = ftt.into_iter().collect();
-        assert_eq!(res.len(), 4000);
-        for tags in res.values() {
+
+        assert_eq!(ftt.file_tags.len(), 4000);
+        for tags in ftt.file_tags.values() {
             assert!(tags.len() <= 4);
         }
+
+        assert_eq!(ftt.file_ids.len(), 4000);
+        for (id, file) in ftt.file_ids {
+            assert!(file.contains(&id.to_string()));
+        }
+
     }
 }

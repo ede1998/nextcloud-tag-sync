@@ -284,9 +284,10 @@ impl Repository {
         self.insert(path, tags);
     }
 
-    pub fn insert_remote(&mut self, path: &Path, tags: Tags) {
+    pub fn insert_remote(&mut self, path: &Path, tags: Tags) -> SyncedPath {
         let path = SyncedPath::from_remote(path, self);
-        self.insert(path, tags);
+        self.insert(path.clone(), tags);
+        path
     }
 
     pub fn insert(&mut self, path: SyncedPath, tags: Tags) {

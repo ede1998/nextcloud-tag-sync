@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use nextcloud_tag_sync::{
     load_config, Connection, ErrorCollection, FileSystemLoopError, ListTagsError, LocalFsWalker,
-    RemoteFsWalker, Repository,
+    RemoteFs, RemoteFsWalker, Repository,
 };
 use snafu::{prelude::*, FromString, Whatever};
 use tokio::task::JoinError;
@@ -32,14 +32,14 @@ async fn main() -> Result<(), Whatever> {
     Ok(())
 }
 
+type LocalFsResult = Result<Repository, FileSystemLoopError>;
+type RemoteFsResult = Result<(Repository, RemoteFs), ListTagsError>;
+
 fn convert(
-    value: (
-        Result<Result<Repository, FileSystemLoopError>, JoinError>,
-        Result<Repository, ListTagsError>,
-    ),
+    value: (Result<LocalFsResult, JoinError>, RemoteFsResult),
 ) -> Result<(Repository, Repository), Whatever> {
     let (errors, text) = match value {
-        (Ok(Ok(l)), Ok(r)) => return Ok((l, r)),
+        (Ok(Ok(l)), Ok(r)) => return Ok((l, r.0)),
         (Ok(Ok(_)), Err(r)) => (
             ErrorCollection::new(r),
             "failed to initialize remote tag repository",

@@ -11,7 +11,7 @@ pub use config::{load_config, Config, ConfigError};
 pub use helper::ErrorCollection;
 pub use local_fs::{FileSystemLoopError, LocalFsWalker};
 pub use remote_fs::{
-    Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFsWalker,
-    TagFile, TagId, UntagFile,
+    Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFs,
+    RemoteFsWalker, TagFile, TagId, UntagFile,
 };
-pub use tag_repository::{PrefixMapping, Repository, Tags, Tag};
+pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};

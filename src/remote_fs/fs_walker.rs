@@ -7,8 +7,7 @@ use snafu::prelude::*;
 use tracing::debug;
 use tracing::error;
 
-use super::DeserializeError;
-use super::RequestError;
+use super::{DeserializeError, RequestError, RemoteFs};
 use crate::{Connection, IntoOk, ListFilesWithTag, ListTags, PrefixMapping, Repository, Tags};
 
 pub struct RemoteFsWalker<'a> {
@@ -30,7 +29,7 @@ impl<'a> RemoteFsWalker<'a> {
         }
     }
 
-    pub async fn build_repository(&self) -> Result<Repository, ListTagsError> {
+    pub async fn build_repository(&self) -> Result<(Repository, RemoteFs), ListTagsError> {
         let tag_map = self
             .connection
             .request(ListTags)
@@ -39,11 +38,11 @@ impl<'a> RemoteFsWalker<'a> {
 
         debug!("Received mapping of {} tags", tag_map.len());
 
-        let tags = futures::stream::iter(tag_map)
+        let tags = futures::stream::iter(&tag_map)
             .map(|(id, tag)| async move {
                 (
                     tag,
-                    self.connection.request(ListFilesWithTag::new(id)).await,
+                    self.connection.request(ListFilesWithTag::new(*id)).await,
                 )
             })
             .buffer_unordered(self.max_concurrent_requests)
@@ -51,7 +50,7 @@ impl<'a> RemoteFsWalker<'a> {
                 match result {
                     Ok(files) => {
                         debug!("Processing tag {tag} with {} files", files.len());
-                        tags.group_tags_by_file(&tag, files);
+                        tags.group_tags_by_file(tag, files);
                     }
                     Err(err) => error!("Failed to fetch file for tag {tag}: {err}"),
                 }
@@ -63,7 +62,13 @@ impl<'a> RemoteFsWalker<'a> {
         for (file, tags) in tags {
             repo.insert_remote(Path::new(&file), tags);
         }
-        Ok(repo)
+
+        let fs = RemoteFs {
+            tags: tag_map,
+            files: todo!(),
+        };
+
+        Ok((repo, fs))
     }
 }
 

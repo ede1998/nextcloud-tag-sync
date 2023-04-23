@@ -1,6 +1,6 @@
 use bimap::BiMap;
 
-use crate::{SyncedPath, Tag, TagId, FileId};
+use crate::{FileId, SyncedPath, Tag, TagId};
 
 pub struct RemoteFs {
     pub tags: BiMap<TagId, Tag>,

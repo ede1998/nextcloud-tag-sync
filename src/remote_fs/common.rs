@@ -1,4 +1,3 @@
-
 macro_rules! newtype {
     ($name:ident) => {
         #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
@@ -27,7 +26,6 @@ macro_rules! newtype {
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 s.parse().map(Self)
             }
-
         }
     };
 }

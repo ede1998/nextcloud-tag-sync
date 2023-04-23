@@ -138,6 +138,5 @@ mod tests {
         for (id, file) in ftt.file_ids {
             assert!(file.contains(&id.to_string()));
         }
-
     }
 }

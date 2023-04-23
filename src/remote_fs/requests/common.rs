@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use askama::Template;
-use reqwest::header::{CONTENT_TYPE, HeaderMap};
+use reqwest::header::{HeaderMap, CONTENT_TYPE};
 use snafu::{prelude::*, ResultExt};
 use tracing::{debug, trace};
 use url::Url;
@@ -60,10 +60,7 @@ impl Connection {
                 .context(ReqwestSnafu)?;
 
             let headers = response.headers().clone();
-            let body = response
-                .text()
-                .await
-                .context(ReqwestSnafu)?;
+            let body = response.text().await.context(ReqwestSnafu)?;
 
             (body, headers)
         } else {

@@ -1,3 +1,4 @@
+mod commands;
 mod config;
 mod helper;
 mod local_fs;
@@ -7,6 +8,7 @@ mod tag_repository;
 use helper::{take_last_n_chars, IntoOk};
 use tag_repository::SyncedPath;
 
+pub use commands::*;
 pub use config::{load_config, Config, ConfigError};
 pub use helper::ErrorCollection;
 pub use local_fs::{FileSystemLoopError, LocalFsWalker};

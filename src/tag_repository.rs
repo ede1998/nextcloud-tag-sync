@@ -156,6 +156,16 @@ impl std::fmt::Display for Tags {
     }
 }
 
+impl IntoIterator for Tags {
+    type Item = Tag;
+
+    type IntoIter = std::collections::hash_set::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl FromIterator<String> for Tags {
     fn from_iter<T>(iter: T) -> Self
     where
@@ -316,7 +326,7 @@ pub struct DiffIterator {
     right: Peekable<MapIter>,
     prefixes: Vec<PrefixMapping>,
     files: BTreeMap<SyncedPath, Tags>,
-    keep_side_on_conflict: Side,
+    pub source_of_truth: Side,
 }
 
 impl Iterator for DiffIterator {
@@ -359,14 +369,14 @@ impl DiffIterator {
         left: MapIter,
         right: MapIter,
         prefixes: Vec<PrefixMapping>,
-        keep_side_on_conflict: Side,
+        source_of_truth: Side,
     ) -> Self {
         DiffIterator {
             left: left.peekable(),
             right: right.peekable(),
             prefixes,
             files: BTreeMap::new(),
-            keep_side_on_conflict,
+            source_of_truth,
         }
     }
 
@@ -383,7 +393,7 @@ impl DiffIterator {
         let diff = left.diff(right);
         let mut result_tags = diff.identical;
 
-        match self.keep_side_on_conflict {
+        match self.source_of_truth {
             Side::Left => {
                 result_tags.insert_all(&diff.left_only);
             }

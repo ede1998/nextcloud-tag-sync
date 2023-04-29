@@ -39,12 +39,13 @@ impl<'a> LocalFsWalker<'a> {
                         }
                     }
                     Err(FileError::IsDirectory { .. }) => {}
-                    Err(err) => match err {
-                        FileError::WalkDir { source } if source.loop_ancestor().is_some() => {
-                            return Err(source).context(FileSystemLoopSnafu);
-                        }
-                        err => error!("skipping file. {err}"),
-                    },
+                    Err(FileError::WalkDir { source }) if source.loop_ancestor().is_some() => {
+                        return Err(source).context(FileSystemLoopSnafu);
+                    }
+                    Err(FileError::Untagged { path }) => {
+                        debug!("skipping untagged file {}", path.display());
+                    }
+                    Err(err) => error!("skipping file. {err}"),
                 }
             }
         }
@@ -73,6 +74,8 @@ impl<'a> LocalFsWalker<'a> {
         let tag =
             String::from_utf8(tag).with_context(|_| TagsNotUtf8Snafu { path: path.clone() })?;
 
+        ensure!(!tag.is_empty(), UntaggedSnafu { path });
+
         #[allow(unstable_name_collisions)]
         Ok((path, tag.parse().into_ok()))
     }
@@ -100,4 +103,6 @@ enum FileError {
         path: PathBuf,
         source: std::string::FromUtf8Error,
     },
+    #[snafu(display("No tags on file {}", path.display()))]
+    Untagged { path: PathBuf },
 }

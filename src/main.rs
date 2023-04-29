@@ -15,20 +15,23 @@ async fn main() -> Result<(), Whatever> {
     let config = Arc::new(load_config().whatever_context("failed to load config")?);
     info!("Starting with configuration: {config}");
     let connection = Connection::from_config(&config);
-    let walker = RemoteFsWalker::new(connection, &config.prefixes, config.max_concurrent_requests);
+    let walker = RemoteFsWalker::new(&connection, &config.prefixes, config.max_concurrent_requests);
     let remote_repo_task = walker.build_repository();
     let local_repo_task = tokio::task::spawn_blocking({
         let config = config.clone();
         move || LocalFsWalker::new(&config.prefixes).build_repository()
     });
 
-    let (local, remote, _remote_fs) = convert(futures::join!(local_repo_task, remote_repo_task))?;
+    let (local, remote, mut remote_fs) = convert(futures::join!(local_repo_task, remote_repo_task))?;
 
     let diff_events = local.diff(remote, config.keep_side_on_conflict);
-    let (left_actions, right_actions) = resolve_diffs(diff_events, config.keep_side_on_conflict);
+    let (local_actions, remote_actions) = resolve_diffs(diff_events, config.keep_side_on_conflict);
 
-    println!("{left_actions:#?}");
-    println!("{right_actions:#?}");
+    println!("{local_actions:#?}");
+    println!("{remote_actions:#?}");
+
+    ensure_whatever!(config.nextcloud_instance.host() == Some(url::Host::Domain("localhost")), "use docker nextcloud for test!");
+    remote_fs.update(remote_actions, &connection, config.max_concurrent_requests).await;
 
     Ok(())
 }

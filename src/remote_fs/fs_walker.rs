@@ -15,14 +15,14 @@ use crate::Tag;
 use crate::{Connection, IntoOk, ListFilesWithTag, ListTags, PrefixMapping, Repository, Tags};
 
 pub struct RemoteFsWalker<'a> {
-    connection: Connection,
+    connection: &'a Connection,
     prefixes: &'a [PrefixMapping],
     max_concurrent_requests: usize,
 }
 
 impl<'a> RemoteFsWalker<'a> {
     pub fn new(
-        connection: Connection,
+        connection: &'a Connection,
         prefixes: &'a [PrefixMapping],
         max_concurrent_requests: usize,
     ) -> Self {

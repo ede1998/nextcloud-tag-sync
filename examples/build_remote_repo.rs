@@ -18,7 +18,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ),
     ];
 
-    let repo = RemoteFsWalker::new(connection, &prefixes, 10)
+    let repo = RemoteFsWalker::new(&connection, &prefixes, 10)
         .build_repository()
         .await?
         .0;

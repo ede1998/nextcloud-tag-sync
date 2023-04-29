@@ -1,0 +1,1 @@
+curl 'http://'"$NC_HOST":"$NC_PORT"'/index.php' -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data-raw 'install=true&adminlogin='"$NC_USER"'&adminpass='"$NC_PASSWORD"'&directory=%2Fvar%2Fwww%2Fhtml%2Fdata&dbtype=sqlite&dbuser=&dbpass=&dbpass-clone=&dbname=&dbhost=localhost'

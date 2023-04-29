@@ -44,6 +44,10 @@ impl Command {
         }));
         self
     }
+
+    pub fn none_if_empty(self) -> Option<Self> {
+        (!self.actions.is_empty()).then_some(self)
+    }
 }
 
 pub fn resolve_diffs<I>(iter: I, source_of_truth: Side) -> (Vec<Command>, Vec<Command>)
@@ -54,10 +58,11 @@ where
         Side::Left => {
             let left = iter
                 .into_iter()
-                .map(|res| {
+                .filter_map(|res| {
                     Command::new(res.path)
                         .add(res.left_only)
                         .remove(res.right_only)
+                        .none_if_empty()
                 })
                 .collect();
             (left, Vec::new())
@@ -65,10 +70,11 @@ where
         Side::Right => {
             let right = iter
                 .into_iter()
-                .map(|res| {
+                .filter_map(|res| {
                     Command::new(res.path)
                         .remove(res.left_only)
                         .add(res.right_only)
+                        .none_if_empty()
                 })
                 .collect();
             (Vec::new(), right)
@@ -78,11 +84,25 @@ where
             let mut left = Vec::new();
 
             for res in iter {
-                right.push(Command::new(res.path.clone()).add(res.left_only));
-                left.push(Command::new(res.path).add(res.right_only));
+                push_some(
+                    &mut right,
+                    Command::new(res.path.clone())
+                        .add(res.left_only)
+                        .none_if_empty(),
+                );
+                push_some(
+                    &mut left,
+                    Command::new(res.path).add(res.right_only).none_if_empty(),
+                );
             }
 
             (left, right)
         }
+    }
+}
+
+fn push_some<T>(vec: &mut Vec<T>, item: Option<T>) {
+    if let Some(t) = item {
+        vec.push(t);
     }
 }

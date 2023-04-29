@@ -163,11 +163,11 @@ pub fn parse<'de, T: serde::Deserialize<'de>>(input: &'de str) -> Result<T, Dese
 }
 
 #[derive(Debug, Snafu)]
-pub enum RequestError<E: std::fmt::Display + std::error::Error + 'static> {
+pub enum RequestError<DeserializeError: std::fmt::Display + std::error::Error + 'static> {
     #[snafu(display("Failed to render request template: {source}"))]
     Askama { source: askama::Error },
     #[snafu(display("Request failed: {source}"))]
     Reqwest { source: reqwest::Error },
     #[snafu(display("Failed to deserialize response: {source}"))]
-    Deserialize { source: E },
+    Deserialize { source: DeserializeError },
 }

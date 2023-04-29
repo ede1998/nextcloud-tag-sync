@@ -3,16 +3,22 @@ use crate::{
     SyncedPath, Tag, Tags,
 };
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Modification {
+    Add,
+    Remove,
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Action {
-    Add(Tag),
-    Remove(Tag),
+pub struct TagAction {
+    pub tag: Tag,
+    pub modification: Modification,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Command {
     pub path: SyncedPath,
-    pub actions: Vec<Action>,
+    pub actions: Vec<TagAction>,
 }
 
 impl Command {
@@ -24,12 +30,18 @@ impl Command {
     }
 
     fn add(mut self, tags: Tags) -> Self {
-        self.actions.extend(tags.into_iter().map(Action::Add));
+        self.actions.extend(tags.into_iter().map(|tag| TagAction {
+            modification: Modification::Add,
+            tag,
+        }));
         self
     }
 
     fn remove(mut self, tags: Tags) -> Self {
-        self.actions.extend(tags.into_iter().map(Action::Remove));
+        self.actions.extend(tags.into_iter().map(|tag| TagAction {
+            modification: Modification::Remove,
+            tag,
+        }));
         self
     }
 }

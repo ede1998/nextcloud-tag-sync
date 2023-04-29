@@ -4,18 +4,18 @@ use askama::Template;
 use reqwest::header::{HeaderMap, ToStrError, CONTENT_LOCATION};
 use snafu::{OptionExt, ResultExt, Snafu};
 
-use crate::TagId;
+use crate::{Tag, TagId};
 
 use super::{Body, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "create_tag.json", escape = "none")]
 pub struct CreateTag {
-    tag: String,
+    tag: Tag,
 }
 
 impl CreateTag {
-    pub fn new(tag: String) -> Self {
+    pub fn new(tag: Tag) -> Self {
         Self { tag }
     }
 }

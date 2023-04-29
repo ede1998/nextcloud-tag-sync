@@ -3,14 +3,15 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use bimap::BiMap;
-use futures::StreamExt;
 use snafu::prelude::*;
 use tracing::debug;
 use tracing::error;
 use tracing::warn;
 
 use super::{DeserializeError, RemoteFs, RequestError};
+use crate::remote_fs::common::LimitedConcurrency;
 use crate::FileId;
+use crate::Tag;
 use crate::{Connection, IntoOk, ListFilesWithTag, ListTags, PrefixMapping, Repository, Tags};
 
 pub struct RemoteFsWalker<'a> {
@@ -41,24 +42,23 @@ impl<'a> RemoteFsWalker<'a> {
 
         debug!("Received mapping of {} tags", tag_map.len());
 
-        let file_tag_helper = futures::stream::iter(&tag_map)
-            .map(|(id, tag)| async move {
+        let file_tag_helper = LimitedConcurrency::new(&tag_map, self.max_concurrent_requests)
+            .transform(|(id, tag)| async move {
                 (
                     tag,
                     self.connection.request(ListFilesWithTag::new(*id)).await,
                 )
             })
-            .buffer_unordered(self.max_concurrent_requests)
-            .fold(FileTagHelper::default(), |mut tags, (tag, result)| {
-                match result {
+            .aggregate(
+                |tags: &mut FileTagHelper, (tag, result): (&Tag, Result<Vec<_>, _>)| match result {
                     Ok(files) => {
                         debug!("Processing tag {tag} with {} files", files.len());
                         tags.group_tags_by_file(tag, files);
                     }
                     Err(err) => error!("Failed to fetch file for tag {tag}: {err}"),
-                }
-                futures::future::ready(tags)
-            })
+                },
+            )
+            .collect_into()
             .await;
 
         let mut repo = Repository::new(self.prefixes.into());

@@ -74,3 +74,48 @@ pub fn take_last_n_chars(string: &str, n: usize) -> &str {
     // Safety: we just computed the index via `char_indices`.
     unsafe { string.get_unchecked(len..) }
 }
+
+#[macro_export]
+macro_rules! newtype {
+    ($name:ident, $type_name:ident) => {
+        #[derive(
+            Debug,
+            Copy,
+            Clone,
+            Eq,
+            PartialOrd,
+            Ord,
+            PartialEq,
+            Hash,
+            serde::Serialize,
+            serde::Deserialize,
+        )]
+        pub struct $name($type_name);
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                std::fmt::Display::fmt(&self.0, f)
+            }
+        }
+
+        impl $name {
+            #[allow(dead_code)]
+            pub fn into_inner(self) -> $type_name {
+                self.0
+            }
+        }
+
+        impl From<$type_name> for $name {
+            fn from(value: $type_name) -> Self {
+                Self(value)
+            }
+        }
+
+        impl std::str::FromStr for $name {
+            type Err = <$type_name as std::str::FromStr>::Err;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                s.parse().map(Self)
+            }
+        }
+    };
+}

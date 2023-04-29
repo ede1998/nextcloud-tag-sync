@@ -11,8 +11,9 @@ use serde::{Deserialize, Serialize};
 use snafu::{ensure, Snafu};
 use tracing::error;
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
-struct PrefixMappingId(usize);
+use crate::newtype;
+
+newtype!(PrefixMappingId, usize);
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SyncedPath {
@@ -51,6 +52,12 @@ impl SyncedPath {
             prefix_id,
             path: path.to_owned(),
         }
+    }
+}
+
+impl std::fmt::Display for SyncedPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "/[ID-{}]/{}", self.prefix_id, self.path.display())
     }
 }
 

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use nextcloud_tag_sync::{
-    load_config, resolve_diffs, Connection, ErrorCollection, FileSystemLoopError, ListTagsError,
-    LocalFsWalker, RemoteFs, RemoteFsWalker, Repository,
+    execute_remotely, load_config, resolve_diffs, ErrorCollection, FileSystemLoopError,
+    ListTagsError, LocalFsWalker, RemoteFs, RemoteFsWalker, Repository,
 };
 use snafu::{prelude::*, FromString, Whatever};
 use tokio::task::JoinError;
@@ -14,15 +14,15 @@ async fn main() -> Result<(), Whatever> {
     tracing_subscriber::fmt::init();
     let config = Arc::new(load_config().whatever_context("failed to load config")?);
     info!("Starting with configuration: {config}");
-    let connection = Connection::from_config(&config);
-    let walker = RemoteFsWalker::new(&connection, &config.prefixes, config.max_concurrent_requests);
+    let walker = RemoteFsWalker::new(&config);
     let remote_repo_task = walker.build_repository();
     let local_repo_task = tokio::task::spawn_blocking({
         let config = config.clone();
-        move || LocalFsWalker::new(&config.prefixes).build_repository()
+        move || LocalFsWalker::new(&config).build_repository()
     });
 
-    let (local, remote, mut remote_fs) = convert(futures::join!(local_repo_task, remote_repo_task))?;
+    let (local, remote, mut remote_fs) =
+        convert(futures::join!(local_repo_task, remote_repo_task))?;
 
     let diff_events = local.diff(remote, config.keep_side_on_conflict);
     let (local_actions, remote_actions) = resolve_diffs(diff_events, config.keep_side_on_conflict);
@@ -30,8 +30,13 @@ async fn main() -> Result<(), Whatever> {
     println!("{local_actions:#?}");
     println!("{remote_actions:#?}");
 
-    ensure_whatever!(config.nextcloud_instance.host() == Some(url::Host::Domain("localhost")), "use docker nextcloud for test!");
-    remote_fs.update(remote_actions, &connection, config.max_concurrent_requests).await;
+    ensure_whatever!(
+        config.nextcloud_instance.host() == Some(url::Host::Domain("localhost")),
+        "use docker nextcloud for test!"
+    );
+
+    execute_remotely(remote_actions, &mut remote_fs, &config).await;
+    // TODO update local fs as well
 
     Ok(())
 }

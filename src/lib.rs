@@ -17,3 +17,6 @@ pub use remote_fs::{
     RemoteFsWalker, TagFile, TagId, UntagFile,
 };
 pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};
+
+pub use local_fs::execute as execute_locally;
+pub use remote_fs::execute as execute_remotely;

@@ -4,7 +4,7 @@ use bimap::BiMap;
 use tracing::{debug, error, warn};
 
 use crate::{
-    Command, Connection, CreateTag, FileId, Modification, SyncedPath, Tag, TagFile, TagId,
+    Command, Config, Connection, CreateTag, FileId, Modification, SyncedPath, Tag, TagFile, TagId,
     UntagFile,
 };
 
@@ -16,25 +16,6 @@ pub struct RemoteFs {
 }
 
 impl RemoteFs {
-    pub async fn update<I>(
-        &mut self,
-        commands: I,
-        connection: &Connection,
-        max_concurrent_requests: usize,
-    ) where
-        I: IntoIterator<Item = Command>,
-        I::IntoIter: Clone,
-    {
-        let commands = commands.into_iter();
-        self.create_missing_tags(commands.clone(), max_concurrent_requests, connection)
-            .await;
-
-        LimitedConcurrency::new(commands, max_concurrent_requests)
-            .transform(|cmd| self.run_command(cmd, connection))
-            .execute()
-            .await;
-    }
-
     async fn create_missing_tags<I>(
         &mut self,
         commands: I,
@@ -120,4 +101,24 @@ impl RemoteFs {
             }
         }
     }
+}
+
+pub async fn execute<I>(commands: I, fs: &mut RemoteFs, config: &Config)
+where
+    I: IntoIterator<Item = Command>,
+    I::IntoIter: Clone,
+{
+    let connection = Connection::from_config(config);
+    let commands = commands.into_iter();
+    fs.create_missing_tags(
+        commands.clone(),
+        config.max_concurrent_requests,
+        &connection,
+    )
+    .await;
+
+    LimitedConcurrency::new(commands, config.max_concurrent_requests)
+        .transform(|cmd| fs.run_command(cmd, &connection))
+        .execute()
+        .await;
 }

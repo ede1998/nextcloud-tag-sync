@@ -10,26 +10,23 @@ use tracing::warn;
 
 use super::{DeserializeError, RemoteFs, RequestError};
 use crate::remote_fs::common::LimitedConcurrency;
+use crate::Config;
 use crate::FileId;
 use crate::Tag;
 use crate::{Connection, IntoOk, ListFilesWithTag, ListTags, PrefixMapping, Repository, Tags};
 
 pub struct RemoteFsWalker<'a> {
-    connection: &'a Connection,
+    connection: Connection,
     prefixes: &'a [PrefixMapping],
     max_concurrent_requests: usize,
 }
 
 impl<'a> RemoteFsWalker<'a> {
-    pub fn new(
-        connection: &'a Connection,
-        prefixes: &'a [PrefixMapping],
-        max_concurrent_requests: usize,
-    ) -> Self {
+    pub fn new(config: &'a Config) -> Self {
         Self {
-            connection,
-            prefixes,
-            max_concurrent_requests,
+            connection: Connection::from_config(config),
+            prefixes: &config.prefixes,
+            max_concurrent_requests: config.max_concurrent_requests,
         }
     }
 

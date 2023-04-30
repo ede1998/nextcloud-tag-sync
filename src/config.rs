@@ -16,6 +16,7 @@ pub struct Config {
     pub nextcloud_instance: Url,
     pub user: String,
     pub token: String,
+    pub local_tag_property_name: String,
 }
 
 impl std::fmt::Debug for Config {
@@ -72,6 +73,7 @@ impl Default for Config {
                 .expect("failed to create default url"),
             user: "missing_username".to_owned(),
             token: "missing_token".to_owned(),
+            local_tag_property_name: "user.xdg.tags".to_owned(),
         }
     }
 }

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use nextcloud_tag_sync::{
-    execute_remotely, load_config, resolve_diffs, ErrorCollection, FileSystemLoopError,
-    ListTagsError, LocalFsWalker, RemoteFs, RemoteFsWalker, Repository,
+    execute_locally, execute_remotely, load_config, resolve_diffs, ErrorCollection,
+    FileSystemLoopError, ListTagsError, LocalFsWalker, RemoteFs, RemoteFsWalker, Repository,
 };
 use snafu::{prelude::*, FromString, Whatever};
 use tokio::task::JoinError;
@@ -36,7 +36,7 @@ async fn main() -> Result<(), Whatever> {
     );
 
     execute_remotely(remote_actions, &mut remote_fs, &config).await;
-    // TODO update local fs as well
+    execute_locally(local_actions, &config);
 
     Ok(())
 }

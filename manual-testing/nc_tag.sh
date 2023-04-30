@@ -87,7 +87,7 @@ file_has_tag() {
 	return 1
 }
 
-add_tag_to_file() {
+add_tag_to_remote_file() {
 	local path="$1"
 	local tag="$2"
 	validate_tagname "$tag"
@@ -119,3 +119,50 @@ add_tag_to_server() {
 	return $?
 }
 
+add_tag_to_local_file() {
+	local path="$1"
+	local tag="$2"
+
+	[ -f "$path" ] || return 1
+
+    # read existing tags
+	tags=()
+	readarray -t -d , tags  <<< $( getfattr "$path" --name user.xdg.tags --only-values 2> /dev/null )
+	
+	# remove single item only contains '\n' -> no tags yet
+	if [ "${#tags[@]}" -eq 1 ]; then
+	  if [[ ! "${tags[0]}" = *[![:space:]]* ]]; then
+	    tags=()
+	  fi
+	fi
+
+	# filter duplicates
+	(printf '%s\0' "${tags[@]}" | grep --fixed-strings --null-data --line-regexp --quiet "$tag") || tags+=($tag)
+
+    # format as comma separated string
+	stags=""
+	for (( i=0; i<"${#tags[@]}"; i++ )); do
+	  # strip trailing newlines
+	  tag=$(sed -e 's/[[:space:]]*$//' <<< "${tags[$i]}" )
+
+	  if [ "$i" -ne 0 ]; then
+	    stags="$stags,${tag}";
+	  else
+	    stags="${tag}";
+	  fi
+	done
+
+	# replace tags
+	setfattr "$path" --value "$stags" --name "user.xdg.tags"
+}
+
+add_tag_to_file() {
+	local path="$1"
+	local tag="$2"
+	add_tag_to_remote_file "$path" "$tag"
+	add_tag_to_local_file "$path" "$tag"
+}
+
+list_local_tags() {
+	getfattr --name user.xdg.tags test_folder/ --recursive 2> /dev/null
+}

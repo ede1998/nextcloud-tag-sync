@@ -1,19 +1,52 @@
 use std::path::PathBuf;
 
 use snafu::prelude::*;
-use tracing::debug;
+use tracing::{debug, error};
 
-use crate::{Command, Config, IntoOk, Tags};
+use crate::{Command, Config, IntoOk, Modification, PrefixMapping, TagAction, Tags};
 
-pub struct LocalFs {}
-
-impl LocalFs {}
-
-pub async fn execute<I>(commands: I, config: &Config)
+pub fn execute<I>(commands: I, config: &Config)
 where
     I: IntoIterator<Item = Command>,
     I::IntoIter: Clone,
 {
+    for cmd in commands {
+        let path = cmd.path.clone();
+        match run_command(cmd, &config.local_tag_property_name, &config.prefixes) {
+            Ok(_) => {
+                debug!("Successfully updated tags for file {path}");
+            }
+            Err(e) => {
+                error!("Failed to update tags for file {path}: {e}");
+            }
+        }
+    }
+}
+
+fn run_command(
+    cmd: Command,
+    tag_property_name: &str,
+    prefixes: &[PrefixMapping],
+) -> Result<(), FileError> {
+    let path = cmd.path.local_file(prefixes);
+
+    let (path, mut tags) = match get_tags_of_file(path, tag_property_name) {
+        Ok(ok) => ok,
+        Err(FileError::Untagged { path }) => (path, Tags::default()),
+        Err(err) => return Err(err),
+    };
+
+    for TagAction { tag, modification } in cmd.actions {
+        match modification {
+            Modification::Add => tags.insert_one(tag),
+            Modification::Remove => tags.remove_one(&tag),
+        }
+    }
+
+    xattr::set(&path, tag_property_name, tags.to_string().as_bytes())
+        .with_context(|_| XAttrSnafu { path })?;
+
+    Ok(())
 }
 
 pub(crate) fn get_tags_of_file(
@@ -39,12 +72,12 @@ pub(crate) fn get_tags_of_file(
 pub(crate) enum FileError {
     #[snafu(display("path {} is a directory", path.display()))]
     IsDirectory { path: PathBuf },
-    #[snafu(display("failed to get tags for path {}: {source}", path.display()))]
+    #[snafu(display("could not get/set extended file attributes of {}: {source}", path.display()))]
     XAttr {
         path: PathBuf,
         source: std::io::Error,
     },
-    #[snafu(display("tags of file {} are not valid UTF-8: {source}", path.display()))]
+    #[snafu(display("tags of {} are not valid UTF-8: {source}", path.display()))]
     TagsNotUtf8 {
         path: PathBuf,
         source: std::string::FromUtf8Error,

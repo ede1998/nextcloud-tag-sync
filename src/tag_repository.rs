@@ -30,12 +30,12 @@ impl SyncedPath {
         }
     }
 
-    pub fn local_file(&self, repo: &Repository) -> PathBuf {
-        repo.prefixes[self.prefix_id.0].local.join(&self.path)
+    pub fn local_file(&self, prefixes: &[PrefixMapping]) -> PathBuf {
+        prefixes[self.prefix_id.0].local.join(&self.path)
     }
 
-    pub fn remote_file(&self, repo: &Repository) -> PathBuf {
-        repo.prefixes[self.prefix_id.0].remote.join(&self.path)
+    pub fn remote_file(&self, prefixes: &[PrefixMapping]) -> PathBuf {
+        prefixes[self.prefix_id.0].remote.join(&self.path)
     }
 
     fn from_local(local: &Path, repo: &Repository) -> Self {
@@ -139,7 +139,7 @@ impl FromStr for Tag {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Tags(HashSet<Tag>);
 
 impl FromStr for Tags {
@@ -239,6 +239,10 @@ impl Tags {
 
     pub fn insert_one(&mut self, tag: Tag) {
         self.0.insert(tag);
+    }
+
+    pub fn remove_one(&mut self, tag: &Tag) {
+        self.0.remove(tag);
     }
 }
 

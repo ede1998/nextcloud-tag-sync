@@ -1,6 +1,6 @@
 use crate::{
     tag_repository::{DiffResult, Side},
-    SyncedPath, Tag, Tags,
+    SyncedPath, SyncedPathPrinter, Tag, Tags,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -104,5 +104,44 @@ where
 fn push_some<T>(vec: &mut Vec<T>, item: Option<T>) {
     if let Some(t) = item {
         vec.push(t);
+    }
+}
+
+pub struct CommandsFormatter<'a>(pub &'a [Command]);
+
+impl<'a> std::fmt::Display for CommandsFormatter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.0.is_empty() {
+            return Ok(());
+        }
+
+        let printer: SyncedPathPrinter<_> = self
+            .0
+            .iter()
+            .map(|cmd| (&cmd.path, ActionsFormatter(&cmd.actions)))
+            .collect();
+        write!(f, "{printer}")?;
+        Ok(())
+    }
+}
+
+#[derive(Default)]
+struct ActionsFormatter<'a>(&'a [TagAction]);
+
+impl<'a> std::fmt::Display for ActionsFormatter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.0.is_empty() {
+            return Ok(());
+        }
+
+        f.write_str(" ->")?;
+        for action in self.0 {
+            let sign = match action.modification {
+                Modification::Add => "+",
+                Modification::Remove => "-",
+            };
+            write!(f, " {sign}{}", action.tag)?;
+        }
+        Ok(())
     }
 }

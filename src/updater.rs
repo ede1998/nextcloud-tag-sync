@@ -6,7 +6,7 @@ use tokio::task::JoinError;
 
 use crate::{
     execute_locally, execute_remotely, resolve_diffs, tag_repository::Side, Config,
-    FileSystemLoopError, ListTagsError, LocalFsWalker, RemoteFs, RemoteFsWalker, Repository,
+    FileSystemLoopError, ListTagsError, LocalFsWalker, RemoteFs, RemoteFsWalker, Repository, CommandsFormatter,
 };
 
 pub struct Uninitialized {
@@ -25,8 +25,10 @@ impl Uninitialized {
         let (local_actions, remote_actions) =
             resolve_diffs(&mut diff_events, self.config.keep_side_on_conflict);
 
-        println!("{local_actions:#?}");
-        println!("{remote_actions:#?}");
+        let cmd_fmt = CommandsFormatter(&local_actions);
+        println!("{cmd_fmt}");
+        let cmd_fmt = CommandsFormatter(&remote_actions);
+        println!("{cmd_fmt}");
 
         execute_remotely(remote_actions, &mut remote_fs, &self.config).await;
         execute_locally(local_actions, &self.config);
@@ -65,7 +67,8 @@ impl Initialized {
         let mut diff_events = repo.diff(local, Side::Right);
         let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
 
-        println!("{actions:#?}");
+        let cmd_fmt = CommandsFormatter(&actions);
+        println!("{cmd_fmt}");
 
         execute_remotely(actions, &mut self.remote_fs, &self.config).await;
         self.repo = diff_events.finish();
@@ -79,7 +82,8 @@ impl Initialized {
         let mut diff_events = repo.diff(remote, Side::Right);
         let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
 
-        println!("{actions:#?}");
+        let cmd_fmt = CommandsFormatter(&actions);
+        println!("{cmd_fmt}");
 
         execute_locally(actions, &self.config);
 

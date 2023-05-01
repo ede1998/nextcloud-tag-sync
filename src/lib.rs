@@ -6,7 +6,7 @@ mod remote_fs;
 mod tag_repository;
 mod updater;
 
-use helper::{newtype, take_last_n_chars, IntoOk};
+use helper::{newtype, take_last_n_chars, IntoOk, SyncedPathPrinter};
 use tag_repository::SyncedPath;
 
 pub use commands::*;

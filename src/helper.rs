@@ -1,4 +1,11 @@
-use std::hint::unreachable_unchecked;
+use crate::tag_repository::SyncedPath;
+use std::{
+    cmp::Ordering,
+    ffi::OsStr,
+    fmt::{Display, Formatter},
+    hint::unreachable_unchecked,
+};
+use termtree::Tree;
 
 pub trait IntoOk {
     fn into_ok(self) -> Self::T;
@@ -13,6 +20,13 @@ impl<T> IntoOk for Result<T, std::convert::Infallible> {
             // safe because Infallible can never be instantiated
             Err(_) => unsafe { unreachable_unchecked() },
         }
+    }
+}
+
+fn into_either<T>(res: Result<T, T>) -> (bool, T) {
+    match res {
+        Ok(o) => (true, o),
+        Err(o) => (false, o),
     }
 }
 
@@ -71,3 +85,258 @@ macro_rules! newtype {
 }
 
 pub(crate) use newtype;
+
+enum Item<'a, T>
+where
+    T: Display,
+{
+    Number(usize),
+    String { name: &'a OsStr, extras: T },
+}
+
+impl<'a, T> Item<'a, T>
+where
+    T: Display + Default,
+{
+    fn string(str: &'a str) -> Self {
+        Self::String {
+            name: OsStr::new(str),
+            extras: T::default(),
+        }
+    }
+
+    fn os_str(str: &'a OsStr) -> Self {
+        Self::String {
+            name: str,
+            extras: T::default(),
+        }
+    }
+}
+
+impl<'a, T> Item<'a, T>
+where
+    T: Display,
+{
+    fn set_extras(&mut self, data: T) {
+        if let Self::String { ref mut extras, .. } = self {
+            *extras = data;
+        }
+    }
+}
+
+impl<'a, T> PartialEq for Item<'a, T>
+where
+    T: Display,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Item::Number(l), Item::Number(r)) => l == r,
+            (Item::String { name: l, .. }, Item::String { name: r, .. }) => l == r,
+            (Item::Number(_), Item::String { .. }) | (Item::String { .. }, Item::Number(_)) => {
+                false
+            }
+        }
+    }
+}
+
+impl<'a, T> PartialOrd for Item<'a, T>
+where
+    T: Display,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Item::Number(l), Item::Number(r)) => l.partial_cmp(r),
+            (Item::String { name: l, .. }, Item::String { name: r, .. }) => l.partial_cmp(r),
+            (Item::Number(_), Item::String { .. }) | (Item::String { .. }, Item::Number(_)) => None,
+        }
+    }
+}
+
+impl<'a, T> Display for Item<'a, T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Item::Number(num) => write!(f, "{num}"),
+            Item::String { name, extras } => write!(f, "{}{}", name.to_string_lossy(), extras),
+        }
+    }
+}
+
+pub struct SyncedPathPrinter<'a, T: Display> {
+    tree: Tree<Item<'a, T>>,
+}
+
+impl<'a, T> Display for SyncedPathPrinter<'a, T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.tree)
+    }
+}
+
+impl<'a> FromIterator<&'a SyncedPath> for SyncedPathPrinter<'a, DisplayUnit> {
+    fn from_iter<I>(collection: I) -> Self
+    where
+        I: IntoIterator<Item = &'a SyncedPath>,
+    {
+        SyncedPathPrinter::from_iter(collection.into_iter().map(|x| (x, DisplayUnit)))
+    }
+}
+
+impl<'a, T> FromIterator<(&'a SyncedPath, T)> for SyncedPathPrinter<'a, T>
+where
+    T: Display + Default,
+{
+    fn from_iter<I>(collection: I) -> Self
+    where
+        I: IntoIterator<Item = (&'a SyncedPath, T)>,
+    {
+        let mut paths: Vec<_> = collection.into_iter().collect();
+        paths.sort_unstable_by(|l, r| l.0.cmp(r.0));
+
+        let mut tree = Tree::new(Item::string("ROOT"));
+        for (path, extras) in paths {
+            let root_id = path.root().into_inner();
+            let mut tree = match tree.leaves.get_mut(root_id) {
+                Some(t) => t,
+                None => {
+                    tree.leaves.extend(
+                        (tree.leaves.len()..=root_id).map(|id| Tree::new(Item::Number(id))),
+                    );
+                    &mut tree.leaves[root_id]
+                }
+            };
+
+            for component in path.relative().components() {
+                let element = Item::os_str(component.as_os_str());
+                let (already_exists, element_at) = into_either(tree.leaves.binary_search_by(|x| {
+                    x.root
+                        .partial_cmp(&element)
+                        .expect("should only compare strings here")
+                }));
+                if !already_exists {
+                    tree.leaves.insert(element_at, Tree::new(element));
+                }
+                tree = &mut tree.leaves[element_at];
+            }
+
+            tree.root.set_extras(extras);
+        }
+        SyncedPathPrinter { tree }
+    }
+}
+
+#[derive(Default)]
+struct DisplayUnit;
+
+impl Display for DisplayUnit {
+    fn fmt(&self, _: &mut Formatter) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn files() -> [SyncedPath; 15] {
+        [
+            SyncedPath::new(1, "test/house.txt"),
+            SyncedPath::new(0, "bar/baz/random.txt"),
+            SyncedPath::new(1, "test/mouse.txt"),
+            SyncedPath::new(1, "test/country/word.txt"),
+            SyncedPath::new(0, "dummy/err.pdf"),
+            SyncedPath::new(1, "test/hello/tree.txt"),
+            SyncedPath::new(0, "asdf.xml"),
+            SyncedPath::new(1, "test/hello/world.txt"),
+            SyncedPath::new(1, "root.txt"),
+            SyncedPath::new(1, "test/elephant.txt"),
+            SyncedPath::new(1, "invalid.xml"),
+            SyncedPath::new(0, "bar/ok.pdf"),
+            SyncedPath::new(0, "dummy/please.jpg"),
+            SyncedPath::new(0, "bar/baz/drat.pdf"),
+            SyncedPath::new(0, "foo/ignore.txt"),
+        ]
+    }
+
+    #[test]
+    fn print_tree() {
+        let files = files();
+        let printer = SyncedPathPrinter::from_iter(&files);
+        println!("{printer}");
+
+        assert_eq!(
+            printer.to_string(),
+            "ROOT
+├── 0
+│   ├── asdf.xml
+│   ├── bar
+│   │   ├── baz
+│   │   │   ├── drat.pdf
+│   │   │   └── random.txt
+│   │   └── ok.pdf
+│   ├── dummy
+│   │   ├── err.pdf
+│   │   └── please.jpg
+│   └── foo
+│       └── ignore.txt
+└── 1
+    ├── invalid.xml
+    ├── root.txt
+    └── test
+        ├── country
+        │   └── word.txt
+        ├── elephant.txt
+        ├── hello
+        │   ├── tree.txt
+        │   └── world.txt
+        ├── house.txt
+        └── mouse.txt\n"
+        );
+    }
+
+    #[test]
+    fn print_tree_with_extras() {
+        let files = files();
+        let mut files: Vec<_> = files.into_iter().map(|x| (x, " -> data")).collect();
+        files[2].1 = " -> other data";
+        files[5].1 = "_hello_world";
+        files[12].1 = " -> +tag1 -tag2";
+
+        let printer: SyncedPathPrinter<&str> = files.iter().map(|(a, b)| (a, *b)).collect();
+
+        println!("{printer}");
+
+        assert_eq!(
+            printer.to_string(),
+            "ROOT
+├── 0
+│   ├── asdf.xml -> data
+│   ├── bar
+│   │   ├── baz
+│   │   │   ├── drat.pdf -> data
+│   │   │   └── random.txt -> data
+│   │   └── ok.pdf -> data
+│   ├── dummy
+│   │   ├── err.pdf -> data
+│   │   └── please.jpg -> +tag1 -tag2
+│   └── foo
+│       └── ignore.txt -> data
+└── 1
+    ├── invalid.xml -> data
+    ├── root.txt -> data
+    └── test
+        ├── country
+        │   └── word.txt -> data
+        ├── elephant.txt -> data
+        ├── hello
+        │   ├── tree.txt_hello_world
+        │   └── world.txt -> data
+        ├── house.txt -> data
+        └── mouse.txt -> other data\n"
+        );
+    }
+}

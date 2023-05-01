@@ -38,6 +38,14 @@ impl SyncedPath {
         prefixes[self.prefix_id.0].remote.join(&self.path)
     }
 
+    pub fn relative(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn root(&self) -> PrefixMappingId {
+        self.prefix_id
+    }
+
     fn from_local(local: &Path, repo: &Repository) -> Self {
         let (prefix_id, path) = repo.split_prefix(local, FileLocation::Local);
         SyncedPath {

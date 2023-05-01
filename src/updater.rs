@@ -5,8 +5,8 @@ use snafu::{ResultExt, Snafu};
 use tokio::task::JoinError;
 
 use crate::{
-    execute_locally, execute_remotely, resolve_diffs, Config, FileSystemLoopError, ListTagsError,
-    LocalFsWalker, RemoteFs, RemoteFsWalker, Repository,
+    execute_locally, execute_remotely, resolve_diffs, tag_repository::Side, Config,
+    FileSystemLoopError, ListTagsError, LocalFsWalker, RemoteFs, RemoteFsWalker, Repository,
 };
 
 pub struct Uninitialized {
@@ -15,29 +15,11 @@ pub struct Uninitialized {
 
 impl Uninitialized {
     async fn create_from_local_remote_diff(&self) -> Result<Initialized, InitError> {
-        let walker = RemoteFsWalker::new(&self.config);
-        let remote_repo_task = walker.build_repository();
-        let local_repo_task = tokio::task::spawn_blocking({
-            let config = self.config.clone();
-            move || LocalFsWalker::new(&config).build_repository()
-        })
-        .map(|res| match res {
-            Ok(Ok(o)) => Ok(o),
-            Ok(Err(e)) => Err(e).context(FilesystemLoopSnafu),
-            Err(e) => Err(e).context(JoinSnafu),
-        });
+        let remote_repo_task = run_remote_walker(&self.config);
+        let local_repo_task = run_local_walker(self.config.clone());
 
         let (local, (remote, mut remote_fs)) =
-            match futures::join!(local_repo_task, remote_repo_task) {
-                (Ok(l), Ok(r)) => (l, r),
-                (Ok(_), Err(e)) => Err(e).context(RemoteSnafu)?,
-                (Err(e), Ok(_)) => Err(e).context(LocalSnafu)?,
-                (Err(l), Err(r)) => BothSnafu {
-                    source_local: l,
-                    source_remote: r,
-                }
-                .fail()?,
-            };
+            merge_results(futures::join!(local_repo_task, remote_repo_task))?;
 
         let mut diff_events = local.diff(remote, self.config.keep_side_on_conflict);
         let (local_actions, remote_actions) =
@@ -75,9 +57,67 @@ pub struct Initialized {
 }
 
 impl Initialized {
-    pub async fn sync_local_to_remote(&mut self) {}
+    pub async fn sync_local_to_remote(&mut self) -> Result<(), InitError> {
+        let config = self.config.clone();
+        let local = run_local_walker(config).await.context(LocalSnafu)?;
 
-    pub async fn sync_remote_to_local(&mut self) {}
+        let repo = std::mem::take(&mut self.repo);
+        let mut diff_events = repo.diff(local, Side::Right);
+        let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
+
+        println!("{actions:#?}");
+
+        execute_remotely(actions, &mut self.remote_fs, &self.config).await;
+        self.repo = diff_events.finish();
+        Ok(())
+    }
+
+    pub async fn sync_remote_to_local(&mut self) -> Result<(), InitError> {
+        let (remote, remote_fs) = run_remote_walker(&self.config).await.context(RemoteSnafu)?;
+
+        let repo = std::mem::take(&mut self.repo);
+        let mut diff_events = repo.diff(remote, Side::Right);
+        let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
+
+        println!("{actions:#?}");
+
+        execute_locally(actions, &self.config);
+
+        self.repo = diff_events.finish();
+        self.remote_fs.assimilate(remote_fs);
+        Ok(())
+    }
+}
+
+async fn run_local_walker(config: Arc<Config>) -> Result<Repository, LocalError> {
+    tokio::task::spawn_blocking(move || LocalFsWalker::new(&config).build_repository())
+        .map(|res| match res {
+            Ok(Ok(o)) => Ok(o),
+            Ok(Err(e)) => Err(e).context(FilesystemLoopSnafu),
+            Err(e) => Err(e).context(JoinSnafu),
+        })
+        .await
+}
+
+async fn run_remote_walker(config: &Config) -> Result<(Repository, RemoteFs), ListTagsError> {
+    let walker = RemoteFsWalker::new(config);
+    walker.build_repository().await
+}
+
+#[allow(clippy::result_large_err)] // only runs once -> no performance issue anyway
+fn merge_results<T, U>(
+    results: (Result<T, LocalError>, Result<U, ListTagsError>),
+) -> Result<(T, U), InitError> {
+    match results {
+        (Ok(l), Ok(r)) => Ok((l, r)),
+        (Ok(_), Err(e)) => Err(e).context(RemoteSnafu)?,
+        (Err(e), Ok(_)) => Err(e).context(LocalSnafu)?,
+        (Err(l), Err(r)) => BothSnafu {
+            source_local: l,
+            source_remote: r,
+        }
+        .fail()?,
+    }
 }
 
 #[derive(Snafu, Debug)]

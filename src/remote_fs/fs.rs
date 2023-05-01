@@ -10,12 +10,18 @@ use crate::{
 
 use super::{common::LimitedConcurrency, GetFileId};
 
+#[derive(Debug)]
 pub struct RemoteFs {
     pub tags: BiMap<TagId, Tag>,
     pub files: BiMap<FileId, SyncedPath>,
 }
 
 impl RemoteFs {
+    pub fn assimilate(&mut self, other: Self) {
+        self.tags.extend(other.tags);
+        self.files.extend(other.files);
+    }
+
     async fn create_missing_tags<I>(
         &mut self,
         commands: I,

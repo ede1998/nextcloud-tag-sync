@@ -266,7 +266,7 @@ impl PrefixMapping {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Repository {
     prefixes: Vec<PrefixMapping>,
     files: BTreeMap<SyncedPath, Tags>,

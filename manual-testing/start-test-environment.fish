@@ -17,7 +17,7 @@ bash create-root-user.sh || exit
 echo "Syncing directory tree $NC_FOLDER to Nextcloud" 
 bash sync-dir.sh $NC_FOLDER
 
-set -x RUST_LOG nextcloud_tag_sync=trace
+set -x RUST_LOG nextcloud_tag_sync=trace,nextcloud_tag_sync::remote_fs::requests::common=debug
 
 cd (status dirname)
 

@@ -7,11 +7,15 @@ use nextcloud_tag_sync::{
 use snafu::{prelude::*, FromString, Whatever};
 use tokio::task::JoinError;
 use tracing::info;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 #[snafu::report]
 async fn main() -> Result<(), Whatever> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_ansi(atty::is(atty::Stream::Stdout))
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
     let config = Arc::new(load_config().whatever_context("failed to load config")?);
     info!("Starting with configuration: {config}");
     let walker = RemoteFsWalker::new(&config);

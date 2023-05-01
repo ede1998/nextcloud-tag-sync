@@ -75,7 +75,6 @@ pub fn take_last_n_chars(string: &str, n: usize) -> &str {
     unsafe { string.get_unchecked(len..) }
 }
 
-#[macro_export]
 macro_rules! newtype {
     ($name:ident, $type_name:ident) => {
         #[derive(
@@ -119,3 +118,5 @@ macro_rules! newtype {
         }
     };
 }
+
+pub(crate) use newtype;

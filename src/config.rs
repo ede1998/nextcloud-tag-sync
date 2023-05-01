@@ -3,7 +3,6 @@ use figment::{
     Figment,
 };
 use serde::{Deserialize, Serialize};
-use snafu::{ResultExt, Snafu};
 use url::Url;
 
 use crate::{tag_repository::Side, take_last_n_chars, PrefixMapping};
@@ -78,18 +77,9 @@ impl Default for Config {
     }
 }
 
-pub fn load_config() -> Result<Config, ConfigError> {
+pub fn load_config() -> Result<Config, figment::Error> {
     Figment::from(Serialized::defaults(Config::default()))
         .merge(Toml::file("config.toml"))
         .merge(Env::prefixed("APP_"))
         .extract()
-        .context(FigmentSnafu)
-}
-
-#[derive(Debug, Snafu)]
-pub enum ConfigError {
-    #[snafu(display("Failed to set configuration: {source}"))]
-    Figment { source: figment::Error },
-    #[snafu(display("Configuration already loaded",))]
-    AlreadyInitialized,
 }

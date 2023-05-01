@@ -332,6 +332,7 @@ pub enum FileLocation {
     Remote,
 }
 
+#[derive(Debug)]
 pub struct DiffIterator {
     left: Peekable<MapIter>,
     right: Peekable<MapIter>,
@@ -340,7 +341,7 @@ pub struct DiffIterator {
     pub source_of_truth: Side,
 }
 
-impl Iterator for DiffIterator {
+impl Iterator for &mut DiffIterator {
     type Item = DiffResult;
 
     fn next(&mut self) -> Option<Self::Item> {

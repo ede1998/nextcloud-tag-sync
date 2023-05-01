@@ -16,55 +16,6 @@ impl<T> IntoOk for Result<T, std::convert::Infallible> {
     }
 }
 
-#[derive(Debug)]
-pub struct ErrorCollection {
-    sources: Vec<Box<dyn std::error::Error>>,
-}
-
-impl ErrorCollection {
-    pub fn new<E>(err: E) -> Self
-    where
-        E: std::error::Error + 'static,
-    {
-        Self {
-            sources: vec![err.into()],
-        }
-    }
-}
-
-impl std::fmt::Display for ErrorCollection {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        if self.sources.len() > 1 {
-            writeln!(f, "Multiple errors occurred:")?;
-        }
-        for source in &self.sources {
-            writeln!(f, "{source}")?;
-        }
-        Ok(())
-    }
-}
-
-impl<const M: usize, E: std::error::Error + 'static> From<[E; M]> for ErrorCollection {
-    fn from(value: [E; M]) -> Self {
-        let sources = value.into_iter().map(Into::into).collect();
-        Self { sources }
-    }
-}
-
-impl<E1, E2> From<(E1, E2)> for ErrorCollection
-where
-    E1: std::error::Error + 'static,
-    E2: std::error::Error + 'static,
-{
-    fn from(value: (E1, E2)) -> Self {
-        Self {
-            sources: vec![value.0.into(), value.1.into()],
-        }
-    }
-}
-
-impl snafu::Error for ErrorCollection {}
-
 pub fn take_last_n_chars(string: &str, n: usize) -> &str {
     let len = string
         .char_indices()

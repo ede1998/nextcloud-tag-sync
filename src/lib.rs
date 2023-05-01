@@ -4,13 +4,13 @@ mod helper;
 mod local_fs;
 mod remote_fs;
 mod tag_repository;
+mod updater;
 
 use helper::{newtype, take_last_n_chars, IntoOk};
 use tag_repository::SyncedPath;
 
 pub use commands::*;
-pub use config::{load_config, Config, ConfigError};
-pub use helper::ErrorCollection;
+pub use config::{load_config, Config};
 pub use local_fs::{FileSystemLoopError, LocalFsWalker};
 pub use remote_fs::{
     Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFs,
@@ -18,5 +18,7 @@ pub use remote_fs::{
 };
 pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};
 
-pub use local_fs::execute as execute_locally;
-pub use remote_fs::execute as execute_remotely;
+use local_fs::execute as execute_locally;
+use remote_fs::execute as execute_remotely;
+
+pub use updater::{InitError, Initialized, LocalError, Uninitialized};

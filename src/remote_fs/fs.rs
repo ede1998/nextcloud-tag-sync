@@ -4,11 +4,11 @@ use bimap::BiMap;
 use tracing::{debug, error, warn};
 
 use crate::{
-    Command, Config, Connection, CreateTag, FileId, Modification, SyncedPath, Tag, TagFile, TagId,
-    UntagFile,
+    Command, Config, Connection, CreateTag, FileId, Modification, PrefixMapping, SyncedPath, Tag,
+    TagFile, TagId, UntagFile,
 };
 
-use super::common::LimitedConcurrency;
+use super::{common::LimitedConcurrency, GetFileId};
 
 pub struct RemoteFs {
     pub tags: BiMap<TagId, Tag>,
@@ -64,10 +64,51 @@ impl RemoteFs {
             .collect()
     }
 
+    async fn get_missing_file_ids<I>(
+        &mut self,
+        commands: I,
+        max_concurrent_requests: usize,
+        prefixes: &[PrefixMapping],
+        connection: &Connection,
+    ) where
+        I: IntoIterator<Item = Command>,
+    {
+        let missing_file_id_requests = commands
+            .into_iter()
+            .map(|cmd| cmd.path)
+            .filter(|path| !self.files.contains_right(path))
+            .filter_map(|path| {
+                let request = GetFileId::new(&path.remote_file(prefixes));
+
+                if request.is_none() {
+                    warn!("failed to format file {path} as UTF-8");
+                }
+
+                request.map(|req| (path, req))
+            });
+
+        let new_files = LimitedConcurrency::new(missing_file_id_requests, max_concurrent_requests)
+            .transform(|(path, request)| async move { (path, connection.request(request).await) })
+            .aggregate(
+                |new_files: &mut BiMap<FileId, SyncedPath>, (path, result)| match result {
+                    Ok(file_id) => {
+                        new_files.insert(file_id, path);
+                    }
+                    Err(e) => {
+                        warn!("failed to create query file id for {path}: {e}");
+                    }
+                },
+            )
+            .collect_into()
+            .await;
+        self.files.extend(new_files);
+    }
+
     async fn run_command(&self, cmd: Command, connection: &Connection) {
         let path = &cmd.path;
 
         let Some(&file_id) = self.files.get_by_right(path) else {
+            // We queried unknown file ids before. Can only land here if query failed.
             error!("Unknown file {path}. Ensure file is synced so it has an ID.");
             return;
         };
@@ -113,6 +154,14 @@ where
     fs.create_missing_tags(
         commands.clone(),
         config.max_concurrent_requests,
+        &connection,
+    )
+    .await;
+
+    fs.get_missing_file_ids(
+        commands.clone(),
+        config.max_concurrent_requests,
+        &config.prefixes,
         &connection,
     )
     .await;

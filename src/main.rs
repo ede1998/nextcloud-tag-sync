@@ -25,8 +25,14 @@ async fn main() -> Result<(), Whatever> {
         .initialize()
         .await
         .whatever_context("failed to initialize repository")?;
-    initialized.sync_local_to_remote().await;
-    initialized.sync_remote_to_local().await;
+    initialized
+        .sync_local_to_remote()
+        .await
+        .whatever_context("failed to sync local to remote")?;
+    initialized
+        .sync_remote_to_local()
+        .await
+        .whatever_context("failed to sync remote to local")?;
 
     Ok(())
 }

@@ -1,37 +1,41 @@
-use std::collections::HashSet;
+use std::{
+    collections::{hash_map::Entry, HashMap, HashSet},
+    path::Path,
+    sync::Arc,
+};
 
 use bimap::BiMap;
+use snafu::{ResultExt, Snafu};
 use tracing::{debug, error, warn};
 
 use crate::{
-    Command, Config, Connection, CreateTag, FileId, Modification, PrefixMapping, SyncedPath, Tag,
-    TagFile, TagId, UntagFile,
+    updater::RemoteSnafu, Command, Config, Connection, CreateTag, FileId, FileSystem, IntoOk,
+    Modification, SyncedPath, Tag, TagFile, TagId, Tags, UntagFile,
 };
 
-use super::{common::LimitedConcurrency, GetFileId};
+use super::{common::LimitedConcurrency, DeserializeError, GetFileId, RequestError};
 
 #[derive(Debug)]
 pub struct RemoteFs {
     pub tags: BiMap<TagId, Tag>,
     pub files: BiMap<FileId, SyncedPath>,
+    config: Arc<Config>,
 }
 
 impl RemoteFs {
-    pub fn assimilate(&mut self, other: Self) {
-        self.tags.extend(other.tags);
-        self.files.extend(other.files);
+    pub fn new(config: Arc<Config>) -> Self {
+        Self {
+            tags: Default::default(),
+            files: Default::default(),
+            config,
+        }
     }
-
-    async fn create_missing_tags<I>(
-        &mut self,
-        commands: I,
-        max_concurrent_requests: usize,
-        connection: &Connection,
-    ) where
+    async fn create_missing_tags<I>(&mut self, commands: I, connection: &Connection)
+    where
         I: IntoIterator<Item = Command>,
     {
         let tags_to_create = self.get_unknown_tags(commands);
-        let new_tags = LimitedConcurrency::new(tags_to_create, max_concurrent_requests)
+        let new_tags = LimitedConcurrency::new(tags_to_create, self.config.max_concurrent_requests)
             .transform(
                 |tag| async move { (tag.clone(), connection.request(CreateTag::new(tag)).await) },
             )
@@ -70,15 +74,15 @@ impl RemoteFs {
             .collect()
     }
 
-    async fn get_missing_file_ids<I>(
-        &mut self,
-        commands: I,
-        max_concurrent_requests: usize,
-        prefixes: &[PrefixMapping],
-        connection: &Connection,
-    ) where
+    async fn get_missing_file_ids<I>(&mut self, commands: I, connection: &Connection)
+    where
         I: IntoIterator<Item = Command>,
     {
+        let Config {
+            max_concurrent_requests,
+            prefixes,
+            ..
+        } = &*self.config;
         let missing_file_id_requests = commands
             .into_iter()
             .map(|cmd| cmd.path)
@@ -93,7 +97,7 @@ impl RemoteFs {
                 request.map(|req| (path, req))
             });
 
-        let new_files = LimitedConcurrency::new(missing_file_id_requests, max_concurrent_requests)
+        let new_files = LimitedConcurrency::new(missing_file_id_requests, *max_concurrent_requests)
             .transform(|(path, request)| async move { (path, connection.request(request).await) })
             .aggregate(
                 |new_files: &mut BiMap<FileId, SyncedPath>, (path, result)| match result {
@@ -123,10 +127,10 @@ impl RemoteFs {
             let tag = &action.tag;
 
             let Some(&tag_id) = self.tags.get_by_right(&action.tag) else {
-                    // We created unknown tags before. Can only land here if tag creation failed.
-                    error!("Unknown tag {tag}. Failed to update tags for file {path}.");
-                    continue;
-                };
+                // We created unknown tags before. Can only land here if tag creation failed.
+                error!("Unknown tag {tag}. Failed to update tags for file {path}.");
+                continue;
+            };
 
             let res = match action.modification {
                 Modification::Add => connection.request(TagFile::new(tag_id, file_id)).await,
@@ -150,30 +154,123 @@ impl RemoteFs {
     }
 }
 
-pub async fn execute<I>(commands: I, fs: &mut RemoteFs, config: &Config)
-where
-    I: IntoIterator<Item = Command>,
-    I::IntoIter: Clone,
-{
-    let connection = Connection::from_config(config);
-    let commands = commands.into_iter();
-    fs.create_missing_tags(
-        commands.clone(),
-        config.max_concurrent_requests,
-        &connection,
-    )
-    .await;
+impl FileSystem for RemoteFs {
+    async fn create_repo(&mut self) -> Result<crate::Repository, crate::InitError> {
+        use crate::{ListFilesWithTag, ListTags, Repository};
+        let connection = &Connection::from_config(&self.config);
+        let tag_map = connection
+            .request(ListTags)
+            .await
+            .context(ListTagsSnafu)
+            .context(RemoteSnafu)?;
+        debug!("Received mapping of {} tags", tag_map.len());
+        self.tags.extend(tag_map);
+        let file_tag_helper =
+            LimitedConcurrency::new(&self.tags, self.config.max_concurrent_requests)
+                .transform(|(id, tag)| async move {
+                    (tag, connection.request(ListFilesWithTag::new(*id)).await)
+                })
+                .aggregate(
+                    |tags: &mut FileTagHelper, (tag, result): (&Tag, Result<Vec<_>, _>)| {
+                        match result {
+                            Ok(files) => {
+                                debug!("Processing tag {tag} with {} files", files.len());
+                                tags.group_tags_by_file(tag, files);
+                            }
+                            Err(err) => error!("Failed to fetch file for tag {tag}: {err}"),
+                        }
+                    },
+                )
+                .collect_into()
+                .await;
+        let mut repo = Repository::new(self.config.prefixes.clone());
+        for (file, tags) in file_tag_helper.file_tags {
+            let synced_path = repo.insert_remote(Path::new(&file), tags);
+            let Some(&id) = file_tag_helper.file_ids.get_by_right(&file) else {
+                warn!("Missing id for file {file}");
+                continue;
+            };
+            self.files.insert(id, synced_path);
+        }
 
-    fs.get_missing_file_ids(
-        commands.clone(),
-        config.max_concurrent_requests,
-        &config.prefixes,
-        &connection,
-    )
-    .await;
+        Ok(repo)
+    }
 
-    LimitedConcurrency::new(commands, config.max_concurrent_requests)
-        .transform(|cmd| fs.run_command(cmd, &connection))
-        .execute()
-        .await;
+    async fn update_tags<I>(&mut self, commands: I)
+    where
+        I: IntoIterator<Item = Command>,
+    {
+        let connection = Connection::from_config(&self.config);
+        let commands: Vec<_> = commands.into_iter().collect();
+        self.create_missing_tags(commands.clone(), &connection)
+            .await;
+
+        self.get_missing_file_ids(commands.clone(), &connection)
+            .await;
+
+        LimitedConcurrency::new(commands, self.config.max_concurrent_requests)
+            .transform(|cmd| self.run_command(cmd, &connection))
+            .execute()
+            .await;
+    }
+}
+
+#[derive(Debug, Snafu)]
+#[snafu(display("Failed to list tags: {source}"))]
+pub struct ListTagsError {
+    pub source: RequestError<DeserializeError>,
+}
+
+#[derive(Debug, Default)]
+struct FileTagHelper {
+    file_ids: BiMap<FileId, String>,
+    file_tags: HashMap<String, Tags>,
+}
+
+impl FileTagHelper {
+    fn group_tags_by_file<I: IntoIterator<Item = (FileId, String)>>(
+        &mut self,
+        tag: &str,
+        files: I,
+    ) {
+        #[allow(unstable_name_collisions)]
+        let tag: Tags = tag.parse().into_ok();
+        for (id, file) in files {
+            self.file_ids.insert(id, file.clone());
+            match self.file_tags.entry(file) {
+                Entry::Occupied(mut entry) => entry.get_mut().insert_all(&tag),
+                Entry::Vacant(entry) => {
+                    entry.insert(tag.clone());
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn group_tags() {
+        let files = (0..2000).map(|i| (FileId::from(i), format!("/basic/{i}/bla")));
+        let files1 = (2000..4000).map(|i| (FileId::from(i), format!("/basic/{i}/blob")));
+        let mut ftt = FileTagHelper::default();
+
+        ftt.group_tags_by_file("tag", files.clone());
+        ftt.group_tags_by_file("tag1", files.clone());
+        ftt.group_tags_by_file("tag2", files.clone());
+        ftt.group_tags_by_file("tag3", files);
+        ftt.group_tags_by_file("tag3", files1);
+
+        assert_eq!(ftt.file_tags.len(), 4000);
+        for tags in ftt.file_tags.values() {
+            assert!(tags.len() <= 4);
+        }
+
+        assert_eq!(ftt.file_ids.len(), 4000);
+        for (id, file) in ftt.file_ids {
+            assert!(file.contains(&id.to_string()));
+        }
+    }
 }

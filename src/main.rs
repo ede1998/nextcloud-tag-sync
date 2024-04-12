@@ -20,7 +20,7 @@ async fn main() -> Result<(), Whatever> {
         "use docker nextcloud for test!"
     );
 
-    let uninitialized = Uninitialized { config };
+    let uninitialized = Uninitialized::new(config);
     let mut initialized = uninitialized
         .initialize()
         .await

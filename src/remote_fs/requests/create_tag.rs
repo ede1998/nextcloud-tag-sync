@@ -65,7 +65,6 @@ pub enum CreateTagError {
     MissingHeader,
     #[snafu(display("could not find tag id in location {location}"))]
     MissingTagId {
-        #[snafu(implicit(false))]
         location: String,
     },
     #[snafu(display("failed to parse tag id {tag_id}: {source}"))]

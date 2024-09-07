@@ -11,8 +11,8 @@ struct Config {
 }
 
 impl Default for Config {
-    fn default() -> Config {
-        Config {
+    fn default() -> Self {
+        Self {
             key: "default".into(),
             another: 100,
         }

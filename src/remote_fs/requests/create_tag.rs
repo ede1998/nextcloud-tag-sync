@@ -15,7 +15,8 @@ pub struct CreateTag {
 }
 
 impl CreateTag {
-    pub fn new(tag: Tag) -> Self {
+    #[must_use]
+    pub const fn new(tag: Tag) -> Self {
         Self { tag }
     }
 }
@@ -64,9 +65,7 @@ pub enum CreateTagError {
     #[snafu(display("header content-location is missing"))]
     MissingHeader,
     #[snafu(display("could not find tag id in location {location}"))]
-    MissingTagId {
-        location: String,
-    },
+    MissingTagId { location: String },
     #[snafu(display("failed to parse tag id {tag_id}: {source}"))]
     InvalidTagId {
         tag_id: String,

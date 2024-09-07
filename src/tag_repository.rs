@@ -42,13 +42,13 @@ impl SyncedPath {
         &self.path
     }
 
-    pub fn root(&self) -> PrefixMappingId {
+    pub const fn root(&self) -> PrefixMappingId {
         self.prefix_id
     }
 
     fn from_local(local: &Path, repo: &Repository) -> Self {
         let (prefix_id, path) = repo.split_prefix(local, FileLocation::Local);
-        SyncedPath {
+        Self {
             prefix_id,
             path: path.to_owned(),
         }
@@ -56,7 +56,7 @@ impl SyncedPath {
 
     fn from_remote(remote: &Path, repo: &Repository) -> Self {
         let (prefix_id, path) = repo.split_prefix(remote, FileLocation::Remote);
-        SyncedPath {
+        Self {
             prefix_id,
             path: path.to_owned(),
         }
@@ -186,7 +186,7 @@ impl FromIterator<String> for Tags {
     where
         T: IntoIterator<Item = String>,
     {
-        Tags(
+        Self(
             iter.into_iter()
                 .filter_map(|t| Tag::new_or_log_error(&t))
                 .collect(),
@@ -199,7 +199,7 @@ impl<'a> FromIterator<&'a str> for Tags {
     where
         T: IntoIterator<Item = &'a str>,
     {
-        Tags(iter.into_iter().filter_map(Tag::new_or_log_error).collect())
+        Self(iter.into_iter().filter_map(Tag::new_or_log_error).collect())
     }
 }
 
@@ -219,10 +219,10 @@ impl Debug for Tags {
 
 impl Tags {
     fn new() -> Self {
-        Tags(HashSet::new())
+        Self(HashSet::new())
     }
 
-    fn diff(self, Tags(mut right): Self) -> TagDiff {
+    fn diff(self, Self(mut right): Self) -> TagDiff {
         let mut left = HashSet::new();
         let mut both = HashSet::new();
 
@@ -235,13 +235,13 @@ impl Tags {
         }
 
         TagDiff {
-            identical: Tags(both),
-            left_only: Tags(left),
-            right_only: Tags(right),
+            identical: Self(both),
+            left_only: Self(left),
+            right_only: Self(right),
         }
     }
 
-    pub fn insert_all(&mut self, source: &Tags) {
+    pub fn insert_all(&mut self, source: &Self) {
         self.0.extend(source.0.iter().cloned());
     }
 
@@ -261,14 +261,17 @@ pub struct PrefixMapping {
 }
 
 impl PrefixMapping {
-    pub fn new(local: PathBuf, remote: PathBuf) -> Self {
+    #[must_use]
+    pub const fn new(local: PathBuf, remote: PathBuf) -> Self {
         Self { local, remote }
     }
 
+    #[must_use]
     pub fn local(&self) -> &Path {
         &self.local
     }
 
+    #[must_use]
     pub fn remote(&self) -> &Path {
         &self.remote
     }
@@ -281,7 +284,8 @@ pub struct Repository {
 }
 
 impl Repository {
-    pub fn new(prefixes: Vec<PrefixMapping>) -> Self {
+    #[must_use]
+    pub const fn new(prefixes: Vec<PrefixMapping>) -> Self {
         Self {
             prefixes,
             files: BTreeMap::new(),
@@ -323,6 +327,13 @@ impl Repository {
         self.files.insert(path, tags);
     }
 
+    /// Computes the differences between self and other file tag repository.
+    /// 
+    /// # Panics
+    /// 
+    /// This function panics if the synchronization prefixes between the repositories
+    /// don't match. In this case, the results would be garbage.
+    #[must_use]
     pub fn diff(self, other: Self, keep_side_on_conflict: Side) -> DiffIterator {
         assert_eq!(self.prefixes, other.prefixes);
         DiffIterator::new(
@@ -391,7 +402,7 @@ impl DiffIterator {
         prefixes: Vec<PrefixMapping>,
         source_of_truth: Side,
     ) -> Self {
-        DiffIterator {
+        Self {
             left: left.peekable(),
             right: right.peekable(),
             prefixes,

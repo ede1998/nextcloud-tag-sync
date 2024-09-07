@@ -15,7 +15,8 @@ pub struct ListFilesWithTag {
 }
 
 impl ListFilesWithTag {
-    pub fn new(tag: TagId) -> Self {
+    #[must_use]
+    pub const fn new(tag: TagId) -> Self {
         Self { tag }
     }
 }
@@ -78,11 +79,11 @@ mod tests {
         let tags = ListFilesWithTag::parse(&HeaderMap::new(), input).unwrap();
 
         assert_eq!(tags.len(), 105);
-        assert!(tags.iter().any(|(id, name)| *id == FileId::from(58988)
+        assert!(tags.iter().any(|(id, name)| *id == FileId::from(58_988)
             && name == "/remote.php/dav/files/erik/Pictures/2021/2021-09-22T12-50-42.jpg"));
-        assert!(tags.iter().any(|(id, name)| *id == FileId::from(1220518)
+        assert!(tags.iter().any(|(id, name)| *id == FileId::from(1_220_518)
             && name == "/remote.php/dav/files/erik/Pictures/2022/2022-07-16T17-15-28.jpg"));
-        assert!(tags.iter().any(|(id, name)| *id == FileId::from(34934)
+        assert!(tags.iter().any(|(id, name)| *id == FileId::from(34_934)
             && name == "/remote.php/dav/files/erik/Pictures/2010/2010-07-10T14-02-59.jpg"));
     }
 }

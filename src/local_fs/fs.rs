@@ -10,14 +10,15 @@ use crate::{
     TagAction, Tags,
 };
 
-use super::{FileSystemLoopError, LocalFsWalker};
+use super::LocalFsWalker;
 
 pub struct LocalFs {
     config: Arc<Config>,
 }
 
 impl LocalFs {
-    pub fn new(config: Arc<Config>) -> Self {
+    #[must_use]
+    pub const fn new(config: Arc<Config>) -> Self {
         Self { config }
     }
 }
@@ -27,15 +28,18 @@ impl FileSystem for LocalFs {
         let config = self.config.clone();
         tokio::task::spawn_blocking(move || LocalFsWalker::new(&config).build_repository())
             .map(|res| match res {
-                Ok(Ok(o)) => Ok(o),
-                Ok(Err(e)) => Err(e).context(FilesystemLoopSnafu),
+                Ok(o) => Ok(o),
                 Err(e) => Err(e).context(JoinSnafu),
             })
             .await
             .context(LocalSnafu)
     }
 
-    async fn update_tags<I: IntoIterator<Item = Command>>(&mut self, commands: I) {
+    async fn update_tags<I>(&mut self, commands: I)
+    where
+        I: IntoIterator<Item = Command> + Send,
+
+    {
         for cmd in commands {
             let path = cmd.path.clone();
             match run_command(
@@ -43,7 +47,7 @@ impl FileSystem for LocalFs {
                 &self.config.local_tag_property_name,
                 &self.config.prefixes,
             ) {
-                Ok(_) => {
+                Ok(()) => {
                     debug!("Successfully updated tags for file {path}");
                 }
                 Err(e) => {
@@ -80,7 +84,7 @@ fn run_command(
     Ok(())
 }
 
-pub(crate) fn get_tags_of_file(
+pub fn get_tags_of_file(
     path: PathBuf,
     tag_property_name: &str,
 ) -> Result<(PathBuf, Tags), FileError> {
@@ -100,7 +104,7 @@ pub(crate) fn get_tags_of_file(
 }
 
 #[derive(Debug, Snafu)]
-pub(crate) enum FileError {
+pub enum FileError {
     #[snafu(display("path {} is a directory", path.display()))]
     IsDirectory { path: PathBuf },
     #[snafu(display("could not get/set extended file attributes of {}: {source}", path.display()))]
@@ -120,5 +124,4 @@ pub(crate) enum FileError {
 #[derive(Debug, Snafu)]
 pub enum LocalError {
     Join { source: JoinError },
-    FilesystemLoop { source: FileSystemLoopError },
 }

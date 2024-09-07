@@ -4,20 +4,20 @@ use futures::Future;
 newtype!(TagId, u64);
 newtype!(FileId, u64);
 
-pub(crate) struct LimitedConcurrency<Iter> {
+pub struct LimitedConcurrency<Iter> {
     elements: Iter,
     max_concurrent_requests: usize,
 }
 
 impl<Iter> LimitedConcurrency<Iter> {
-    pub(crate) fn new(elements: Iter, max_concurrent_requests: usize) -> Self {
+    pub const fn new(elements: Iter, max_concurrent_requests: usize) -> Self {
         Self {
             elements,
             max_concurrent_requests,
         }
     }
 
-    pub(crate) fn transform<F, Fut>(self, element_action: F) -> TransformElements<Iter, F>
+    pub const fn transform<F, Fut>(self, element_action: F) -> TransformElements<Iter, F>
     where
         Iter: IntoIterator,
         F: Fn(Iter::Item) -> Fut,
@@ -30,7 +30,7 @@ impl<Iter> LimitedConcurrency<Iter> {
     }
 }
 
-pub(crate) struct TransformElements<Iter, EAction> {
+pub struct TransformElements<Iter, EAction> {
     base: LimitedConcurrency<Iter>,
     element_action: EAction,
 }
@@ -44,7 +44,7 @@ impl<Iter, EAction> TransformElements<Iter, EAction> {
     {
         use futures::StreamExt;
 
-        let async_drop = |_| std::future::ready(());
+        let async_drop = |()| std::future::ready(());
 
         futures::stream::iter(self.base.elements)
             .map(self.element_action)
@@ -53,7 +53,7 @@ impl<Iter, EAction> TransformElements<Iter, EAction> {
             .await;
     }
 
-    pub(crate) fn aggregate<AAction>(
+    pub(crate) const fn aggregate<AAction>(
         self,
         aggregate_action: AAction,
     ) -> AggregateElements<Iter, EAction, AAction> {
@@ -64,7 +64,7 @@ impl<Iter, EAction> TransformElements<Iter, EAction> {
     }
 }
 
-pub(crate) struct AggregateElements<Iter, EAction, AAction> {
+pub struct AggregateElements<Iter, EAction, AAction> {
     pub base: TransformElements<Iter, EAction>,
     pub aggregate_action: AAction,
 }

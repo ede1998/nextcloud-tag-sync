@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use nextcloud_tag_sync::{load_config, Config, PrefixMapping, RemoteFsWalker};
+use nextcloud_tag_sync::{load_config, Config, FileSystem as _, PrefixMapping, RemoteFs};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -17,9 +17,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             ),
         ],
         ..load_config()?
-    };
+    }.into();
 
-    let repo = RemoteFsWalker::new(&config).build_repository().await?.0;
+    let repo = RemoteFs::new(config).create_repo().await?;
 
     println!("{repo:?}");
     Ok(())

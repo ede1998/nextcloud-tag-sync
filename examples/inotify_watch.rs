@@ -8,7 +8,7 @@ async fn main() {
     let path = ["/home/erik/Documents", "/home/erik/Pictures"];
     futures::executor::block_on(async {
         if let Err(e) = async_watch(path).await {
-            println!("error: {:?}", e)
+            println!("error: {e:?}");
         }
     });
 }
@@ -28,7 +28,7 @@ where
                         println!("Dropping event because queue is full.");
                     }
                 }
-            })
+            });
         },
         Config::default(),
     )?;
@@ -39,8 +39,8 @@ where
 
     while let Some(res) = rx.next().await {
         match res {
-            Ok(event) => println!("changed: {:?}", event),
-            Err(e) => println!("watch error: {:?}", e),
+            Ok(event) => println!("changed: {event:?}"),
+            Err(e) => println!("watch error: {e:?}"),
         }
     }
 

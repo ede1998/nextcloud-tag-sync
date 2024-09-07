@@ -17,6 +17,7 @@ pub struct Connection {
 }
 
 impl Connection {
+    #[must_use]
     pub fn from_config(config: &Config) -> Self {
         Self {
             client: reqwest::Client::default(),
@@ -28,7 +29,7 @@ impl Connection {
 
     pub async fn request<T>(&self, request: T) -> Result<T::Output, RequestError<T::Error>>
     where
-        T: Request + Parse,
+        T: Request + Parse + Send,
     {
         let url = request.url(&self.host, &self.user);
         let method = request.method();
@@ -37,9 +38,9 @@ impl Connection {
             None => (String::new(), ""),
         };
 
-        let _url1 = url.clone();
-        let _method1 = method.clone();
-        let _body1 = body.clone();
+        let url1 = url.clone();
+        let method1 = method.clone();
+        let body1 = body.clone();
 
         debug!("Starting request {method} {url}");
         let (payload, headers) = if true {
@@ -64,20 +65,22 @@ impl Connection {
 
             (body, headers)
         } else {
-            //read_sample_data(method, url, &body)
+            //read_sample_data(&method, &url, &body)
             todo!()
         };
         trace!("Received payload {payload} and headers {headers:?}");
 
         if false {
-            update_sample_data(_method1, _url1, &_body1, &payload).await;
+            update_sample_data(&method1, &url1, &body1, &payload).await;
         }
 
         T::parse(&headers, &payload).context(DeserializeSnafu)
     }
 }
 
-async fn update_sample_data(method: reqwest::Method, url: url::Url, body: &str, payload: &str) {
+async fn update_sample_data(method: &reqwest::Method, url: &url::Url, body: &str, payload: &str) {
+    use std::io::Write;
+
     static COUNT: tokio::sync::Mutex<usize> = tokio::sync::Mutex::const_new(0);
     let count = {
         let mut cnt = COUNT.lock().await;
@@ -86,14 +89,17 @@ async fn update_sample_data(method: reqwest::Method, url: url::Url, body: &str, 
         x
     };
     let mut f = std::fs::File::create(format!("request-{count}.txt")).unwrap();
-    use std::io::Write;
     writeln!(f, "{method}").unwrap();
     writeln!(f, "{url}").unwrap();
     writeln!(f, "{body}").unwrap();
-    write!(f, "{}", payload).unwrap();
+    write!(f, "{payload}").unwrap();
 }
 
-fn read_sample_data(method: reqwest::Method, url: url::Url, body: &str) -> String {
+#[allow(
+    dead_code,
+    reason = "Used to save sample data for testing by manually changing code to call this function"
+)]
+fn read_sample_data(method: &reqwest::Method, url: &url::Url, body: &str) -> String {
     use std::io::Read;
     let start = format!("{method}\n{url}\n{body}\n");
     for entry in std::fs::read_dir("sample-data").unwrap() {
@@ -126,7 +132,7 @@ pub struct Body {
 
 impl<T: Template> From<&T> for Body {
     fn from(value: &T) -> Self {
-        Body {
+        Self {
             content: value.render(),
             mime_type: T::MIME_TYPE,
         }

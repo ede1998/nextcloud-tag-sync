@@ -11,7 +11,8 @@ pub struct TagFile {
 }
 
 impl TagFile {
-    pub fn new(tag: TagId, file: FileId) -> Self {
+    #[must_use]
+    pub const fn new(tag: TagId, file: FileId) -> Self {
         Self { tag, file }
     }
 }

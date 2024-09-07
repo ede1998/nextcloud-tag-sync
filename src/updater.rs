@@ -14,6 +14,7 @@ pub struct Uninitialized {
 }
 
 impl Uninitialized {
+    #[must_use]
     pub fn new(config: Arc<Config>) -> Self {
         Self {
             remote_fs: RemoteFs::new(config.clone()),
@@ -21,6 +22,7 @@ impl Uninitialized {
             config,
         }
     }
+
     async fn create_from_local_remote_diff(mut self) -> Result<Initialized, InitError> {
         let remote_repo_task = self.remote_fs.create_repo();
         let local_repo_task = self.local_fs.create_repo();
@@ -46,10 +48,18 @@ impl Uninitialized {
         })
     }
 
-    fn load_from_file(&self) -> Option<Initialized> {
+    const fn load_from_file(&self) -> Option<Initialized> {
+        // TODO? implement loading from cache file
         None
     }
 
+    /// Initialize a file tag repository by loading it from a cache file.
+    /// If loading from file fails, e.g. because no cache exists yet, a new
+    /// one is built from scratch.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if initialization fails.
     pub async fn initialize(self) -> Result<Initialized, InitError> {
         match self.load_from_file() {
             Some(o) => Ok(o),
@@ -65,6 +75,11 @@ pub struct Initialized {
 }
 
 impl Initialized {
+    /// Computes changes of the local tags compared to the cache and uploads all changes to the remote.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if computing the local file tag repository fails.
     pub async fn sync_local_to_remote(&mut self) -> Result<(), InitError> {
         let local = self.local_fs.create_repo().await?;
 
@@ -80,6 +95,11 @@ impl Initialized {
         Ok(())
     }
 
+    /// Computes changes of the remote tags compared to the cache and mirrors all changes to the local filesystem.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if computing the remote file tag repository fails.
     pub async fn sync_remote_to_local(&mut self) -> Result<(), InitError> {
         let remote = self.remote_fs.create_repo().await?;
 
@@ -103,8 +123,7 @@ fn merge_results<T, U>(
 ) -> Result<(T, U), InitError> {
     match results {
         (Ok(l), Ok(r)) => Ok((l, r)),
-        (Ok(_), Err(e)) => Err(e),
-        (Err(e), Ok(_)) => Err(e),
+        (Ok(_), Err(e)) | (Err(e), Ok(_)) => Err(e),
         (
             Err(InitError::Local {
                 source: source_local,
@@ -130,7 +149,7 @@ fn merge_results<T, U>(
 }
 
 #[derive(Snafu, Debug)]
-#[snafu(visibility(pub(crate)))]
+#[snafu(visibility(pub))]
 pub enum InitError {
     #[snafu(display("failed to construct local repository"))]
     Local { source: LocalError },

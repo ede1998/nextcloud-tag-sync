@@ -82,6 +82,6 @@ mod tests {
         assert_eq!(tags.len(), 237);
         assert!(tags
             .iter()
-            .any(|(&id, name)| id == TagId::from(73) && name == &arch))
+            .any(|(&id, name)| id == TagId::from(73) && name == &arch));
     }
 }

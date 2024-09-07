@@ -11,9 +11,7 @@ fn main() -> Result<(), Whatever> {
         ..load_config().whatever_context("failed to load config")?
     };
 
-    let repo = LocalFsWalker::new(&config)
-        .build_repository()
-        .whatever_context("local fs walker error")?;
+    let repo = LocalFsWalker::new(&config).build_repository();
     println!("{repo:?}");
 
     Ok(())

@@ -3,7 +3,6 @@ use std::{
     cmp::Ordering,
     ffi::OsStr,
     fmt::{Display, Formatter},
-    hint::unreachable_unchecked,
 };
 use termtree::Tree;
 
@@ -17,8 +16,6 @@ impl<T> IntoOk for Result<T, std::convert::Infallible> {
     fn into_ok(self) -> T {
         match self {
             Ok(o) => o,
-            // safe because Infallible can never be instantiated
-            Err(_) => unsafe { unreachable_unchecked() },
         }
     }
 }
@@ -63,8 +60,8 @@ macro_rules! newtype {
         }
 
         impl $name {
-            #[allow(dead_code)]
-            pub fn into_inner(self) -> $type_name {
+            #[must_use]
+            pub const fn into_inner(self) -> $type_name {
                 self.0
             }
         }
@@ -182,7 +179,10 @@ impl<'a> FromIterator<&'a SyncedPath> for SyncedPathPrinter<'a, DisplayUnit> {
     where
         I: IntoIterator<Item = &'a SyncedPath>,
     {
-        SyncedPathPrinter::from_iter(collection.into_iter().map(|x| (x, DisplayUnit)))
+        collection
+            .into_iter()
+            .map(|x| (x, DisplayUnit))
+            .collect::<SyncedPathPrinter<_>>()
     }
 }
 
@@ -200,14 +200,12 @@ where
         let mut tree = Tree::new(Item::string("ROOT"));
         for (path, extras) in paths {
             let root_id = path.root().into_inner();
-            let mut tree = match tree.leaves.get_mut(root_id) {
-                Some(t) => t,
-                None => {
-                    tree.leaves.extend(
-                        (tree.leaves.len()..=root_id).map(|id| Tree::new(Item::Number(id))),
-                    );
-                    &mut tree.leaves[root_id]
-                }
+            let mut tree = if let Some(t) = tree.leaves.get_mut(root_id) {
+                t
+            } else {
+                tree.leaves
+                    .extend((tree.leaves.len()..=root_id).map(|id| Tree::new(Item::Number(id))));
+                &mut tree.leaves[root_id]
             };
 
             for component in path.relative().components() {

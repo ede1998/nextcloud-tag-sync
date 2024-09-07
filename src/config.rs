@@ -27,6 +27,7 @@ impl std::fmt::Debug for Config {
             .field("nextcloud_instance", &self.nextcloud_instance)
             .field("user", &self.user)
             .field("token", &"EXPUNGED")
+            .field("local_tag_property_name", &self.local_tag_property_name)
             .finish()
     }
 }
@@ -65,7 +66,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             max_concurrent_requests: 10,
-            prefixes: Default::default(),
+            prefixes: Vec::default(),
             keep_side_on_conflict: Side::Both,
             nextcloud_instance: "https://missing_nextcloud_instance"
                 .try_into()
@@ -77,6 +78,12 @@ impl Default for Config {
     }
 }
 
+/// Load the configuration from environment variables, config.toml or compile time defaults.
+///
+/// # Errors
+///
+/// This function will return an error if configuration loading encounters invalid values or
+/// fails to load the configuration files.
 pub fn load_config() -> Result<Config, figment::Error> {
     Figment::from(Serialized::defaults(Config::default()))
         .merge(Toml::file("config.toml"))

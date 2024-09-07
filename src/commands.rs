@@ -22,7 +22,7 @@ pub struct Command {
 }
 
 impl Command {
-    fn new(path: SyncedPath) -> Self {
+    const fn new(path: SyncedPath) -> Self {
         Self {
             path,
             actions: Vec::new(),
@@ -45,6 +45,7 @@ impl Command {
         self
     }
 
+    #[must_use]
     pub fn none_if_empty(self) -> Option<Self> {
         (!self.actions.is_empty()).then_some(self)
     }

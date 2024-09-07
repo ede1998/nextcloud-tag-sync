@@ -4,7 +4,6 @@ use std::{
     sync::Arc,
 };
 
-use bimap::BiMap;
 use snafu::{ResultExt, Snafu};
 use tracing::{debug, error, warn};
 
@@ -15,24 +14,29 @@ use crate::{
 
 use super::{common::LimitedConcurrency, DeserializeError, GetFileId, RequestError};
 
+type FileMap = bimap::BiHashMap<FileId, SyncedPath>;
+type TagMap = bimap::BiHashMap<TagId, Tag>;
+
 #[derive(Debug)]
 pub struct RemoteFs {
-    pub tags: BiMap<TagId, Tag>,
-    pub files: BiMap<FileId, SyncedPath>,
+    pub tags: TagMap,
+    pub files: FileMap,
     config: Arc<Config>,
 }
 
 impl RemoteFs {
+    #[must_use]
     pub fn new(config: Arc<Config>) -> Self {
         Self {
-            tags: Default::default(),
-            files: Default::default(),
+            tags: TagMap::default(),
+            files: FileMap::default(),
             config,
         }
     }
+
     async fn create_missing_tags<I>(&mut self, commands: I, connection: &Connection)
     where
-        I: IntoIterator<Item = Command>,
+        I: IntoIterator<Item = Command> + Send,
     {
         let tags_to_create = self.get_unknown_tags(commands);
         let new_tags = LimitedConcurrency::new(tags_to_create, self.config.max_concurrent_requests)
@@ -40,7 +44,7 @@ impl RemoteFs {
                 |tag| async move { (tag.clone(), connection.request(CreateTag::new(tag)).await) },
             )
             .aggregate(
-                |new_tags: &mut BiMap<TagId, Tag>, (tag, result)| match result {
+                |new_tags: &mut TagMap, (tag, result)| match result {
                     Ok(tag_id) => {
                         new_tags.insert(tag_id, tag);
                     }
@@ -76,7 +80,8 @@ impl RemoteFs {
 
     async fn get_missing_file_ids<I>(&mut self, commands: I, connection: &Connection)
     where
-        I: IntoIterator<Item = Command>,
+        I: IntoIterator<Item = Command> + Send,
+        I::IntoIter: Send,
     {
         let Config {
             max_concurrent_requests,
@@ -100,7 +105,7 @@ impl RemoteFs {
         let new_files = LimitedConcurrency::new(missing_file_id_requests, *max_concurrent_requests)
             .transform(|(path, request)| async move { (path, connection.request(request).await) })
             .aggregate(
-                |new_files: &mut BiMap<FileId, SyncedPath>, (path, result)| match result {
+                |new_files: &mut FileMap, (path, result)| match result {
                     Ok(file_id) => {
                         new_files.insert(file_id, path);
                     }
@@ -138,7 +143,7 @@ impl RemoteFs {
             };
 
             match res {
-                Ok(_) => {
+                Ok(()) => {
                     let updated = match action.modification {
                         Modification::Add => "added",
                         Modification::Remove => "removed",
@@ -147,6 +152,11 @@ impl RemoteFs {
                     debug!("Successfully {updated} tag {tag} for file {path}");
                 }
                 Err(e) => {
+                    // TODO handle this case for remote and also local fs
+                    // What happens if update fails: cached repo should not be updated
+                    // for this file tag but it will be right now. This will lead to
+                    // issues in the next reverse direction run with tags being reset to the previous
+                    // state.
                     error!("Failed to update tag {tag} for file {path}: {e}",);
                 }
             }
@@ -198,7 +208,7 @@ impl FileSystem for RemoteFs {
 
     async fn update_tags<I>(&mut self, commands: I)
     where
-        I: IntoIterator<Item = Command>,
+        I: IntoIterator<Item = Command> + Send,
     {
         let connection = Connection::from_config(&self.config);
         let commands: Vec<_> = commands.into_iter().collect();
@@ -223,7 +233,7 @@ pub struct ListTagsError {
 
 #[derive(Debug, Default)]
 struct FileTagHelper {
-    file_ids: BiMap<FileId, String>,
+    file_ids: bimap::BiHashMap<FileId, String>,
     file_tags: HashMap<String, Tags>,
 }
 

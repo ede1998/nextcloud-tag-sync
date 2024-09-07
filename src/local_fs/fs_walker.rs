@@ -14,6 +14,7 @@ pub struct LocalFsWalker<'a> {
 }
 
 impl<'a> LocalFsWalker<'a> {
+    #[must_use]
     pub fn new(config: &'a Config) -> Self {
         Self {
             tag_property_name: &config.local_tag_property_name,
@@ -21,23 +22,13 @@ impl<'a> LocalFsWalker<'a> {
         }
     }
 
-    pub fn build_repository(&self) -> Result<Repository, FileSystemLoopError> {
+    pub fn build_repository(&self) -> Repository {
         let mut repo = Repository::new(self.prefixes.into());
         for prefix in self.prefixes {
             let walker = WalkDir::new(prefix.local());
             for entry in walker {
-                let path = match entry {
-                    Ok(ok) => ok.into_path(),
-                    Err(e) => {
-                        error!("Could not access path: {e}");
-                        if e.loop_ancestor().is_some() {
-                            return Err(e).context(FileSystemLoopSnafu);
-                        }
-                        if e.path().map(Path::is_dir) == Some(true) {
-                            warn!("ignoring all files in this subtree");
-                        }
-                        continue;
-                    }
+                let Some(path) = get_path(entry) else {
+                    continue;
                 };
 
                 match get_tags_of_file(path, self.tag_property_name) {
@@ -55,7 +46,28 @@ impl<'a> LocalFsWalker<'a> {
             }
         }
 
-        Ok(repo)
+        repo
+    }
+}
+
+fn get_path(entry: Result<walkdir::DirEntry, walkdir::Error>) -> Option<std::path::PathBuf> {
+    match entry {
+        Ok(ok) => Some(ok.into_path()),
+        Err(e) => {
+            if let Some(target) = e.loop_ancestor() {
+                warn!(
+                    "File system contains a symbolic link loop. Skipping loop from {} to {}.",
+                    e.path().unwrap_or_else(|| Path::new("???")).display(),
+                    target.display()
+                );
+            } else {
+                error!("Could not access path: {e}");
+                if e.path().map(Path::is_dir) == Some(true) {
+                    warn!("Ignoring all files in this subtree.");
+                }
+            }
+            None
+        }
     }
 }
 

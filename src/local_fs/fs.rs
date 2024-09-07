@@ -1,23 +1,54 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
+use futures::FutureExt as _;
 use snafu::prelude::*;
+use tokio::task::JoinError;
 use tracing::{debug, error};
 
-use crate::{Command, Config, IntoOk, Modification, PrefixMapping, TagAction, Tags};
+use crate::{
+    updater::LocalSnafu, Command, Config, FileSystem, IntoOk, Modification, PrefixMapping,
+    TagAction, Tags,
+};
 
-pub fn execute<I>(commands: I, config: &Config)
-where
-    I: IntoIterator<Item = Command>,
-    I::IntoIter: Clone,
-{
-    for cmd in commands {
-        let path = cmd.path.clone();
-        match run_command(cmd, &config.local_tag_property_name, &config.prefixes) {
-            Ok(_) => {
-                debug!("Successfully updated tags for file {path}");
-            }
-            Err(e) => {
-                error!("Failed to update tags for file {path}: {e}");
+use super::{FileSystemLoopError, LocalFsWalker};
+
+pub struct LocalFs {
+    config: Arc<Config>,
+}
+
+impl LocalFs {
+    pub fn new(config: Arc<Config>) -> Self {
+        Self { config }
+    }
+}
+
+impl FileSystem for LocalFs {
+    async fn create_repo(&mut self) -> Result<crate::Repository, crate::InitError> {
+        let config = self.config.clone();
+        tokio::task::spawn_blocking(move || LocalFsWalker::new(&config).build_repository())
+            .map(|res| match res {
+                Ok(Ok(o)) => Ok(o),
+                Ok(Err(e)) => Err(e).context(FilesystemLoopSnafu),
+                Err(e) => Err(e).context(JoinSnafu),
+            })
+            .await
+            .context(LocalSnafu)
+    }
+
+    async fn update_tags<I: IntoIterator<Item = Command>>(&mut self, commands: I) {
+        for cmd in commands {
+            let path = cmd.path.clone();
+            match run_command(
+                cmd,
+                &self.config.local_tag_property_name,
+                &self.config.prefixes,
+            ) {
+                Ok(_) => {
+                    debug!("Successfully updated tags for file {path}");
+                }
+                Err(e) => {
+                    error!("Failed to update tags for file {path}: {e}");
+                }
             }
         }
     }
@@ -84,4 +115,10 @@ pub(crate) enum FileError {
     },
     #[snafu(display("no tags on file {}", path.display()))]
     Untagged { path: PathBuf },
+}
+
+#[derive(Debug, Snafu)]
+pub enum LocalError {
+    Join { source: JoinError },
+    FilesystemLoop { source: FileSystemLoopError },
 }

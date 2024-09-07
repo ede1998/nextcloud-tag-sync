@@ -1,29 +1,29 @@
 use std::sync::Arc;
 
-use futures::FutureExt;
-use snafu::{ResultExt, Snafu};
-use tokio::task::JoinError;
+use snafu::Snafu;
 
 use crate::{
-    execute_locally, resolve_diffs, tag_repository::Side, CommandsFormatter, Config, FileSystem,
-    FileSystemLoopError, ListTagsError, LocalFsWalker, RemoteFs, Repository,
+    resolve_diffs, tag_repository::Side, CommandsFormatter, Config, FileSystem, ListTagsError,
+    LocalError, LocalFs, RemoteFs, Repository,
 };
 
 pub struct Uninitialized {
     pub config: Arc<Config>,
     pub remote_fs: RemoteFs,
+    pub local_fs: LocalFs,
 }
 
 impl Uninitialized {
     pub fn new(config: Arc<Config>) -> Self {
         Self {
             remote_fs: RemoteFs::new(config.clone()),
+            local_fs: LocalFs::new(config.clone()),
             config,
         }
     }
     async fn create_from_local_remote_diff(mut self) -> Result<Initialized, InitError> {
         let remote_repo_task = self.remote_fs.create_repo();
-        let local_repo_task = run_local_walker(self.config.clone()).map(|r| r.context(LocalSnafu));
+        let local_repo_task = self.local_fs.create_repo();
 
         let (local, remote) = merge_results(futures::join!(local_repo_task, remote_repo_task))?;
 
@@ -37,12 +37,12 @@ impl Uninitialized {
         println!("{cmd_fmt}");
 
         self.remote_fs.update_tags(remote_actions).await;
-        execute_locally(local_actions, &self.config);
+        self.local_fs.update_tags(local_actions).await;
 
         Ok(Initialized {
             repo: diff_events.finish(),
             remote_fs: self.remote_fs,
-            config: self.config.clone(),
+            local_fs: self.local_fs,
         })
     }
 
@@ -61,13 +61,12 @@ impl Uninitialized {
 pub struct Initialized {
     repo: Repository,
     remote_fs: RemoteFs,
-    config: Arc<Config>,
+    local_fs: LocalFs,
 }
 
 impl Initialized {
     pub async fn sync_local_to_remote(&mut self) -> Result<(), InitError> {
-        let config = self.config.clone();
-        let local = run_local_walker(config).await.context(LocalSnafu)?;
+        let local = self.local_fs.create_repo().await?;
 
         let repo = std::mem::take(&mut self.repo);
         let mut diff_events = repo.diff(local, Side::Right);
@@ -91,21 +90,11 @@ impl Initialized {
         let cmd_fmt = CommandsFormatter(&actions);
         println!("{cmd_fmt}");
 
-        execute_locally(actions, &self.config);
+        self.local_fs.update_tags(actions).await;
 
         self.repo = diff_events.finish();
         Ok(())
     }
-}
-
-async fn run_local_walker(config: Arc<Config>) -> Result<Repository, LocalError> {
-    tokio::task::spawn_blocking(move || LocalFsWalker::new(&config).build_repository())
-        .map(|res| match res {
-            Ok(Ok(o)) => Ok(o),
-            Ok(Err(e)) => Err(e).context(FilesystemLoopSnafu),
-            Err(e) => Err(e).context(JoinSnafu),
-        })
-        .await
 }
 
 #[allow(clippy::result_large_err)] // only runs once -> no performance issue anyway
@@ -152,10 +141,4 @@ pub enum InitError {
         source_local: LocalError,
         source_remote: ListTagsError,
     },
-}
-
-#[derive(Debug, Snafu)]
-pub enum LocalError {
-    Join { source: JoinError },
-    FilesystemLoop { source: FileSystemLoopError },
 }

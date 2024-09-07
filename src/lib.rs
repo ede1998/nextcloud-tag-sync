@@ -11,16 +11,14 @@ use tag_repository::SyncedPath;
 
 pub use commands::*;
 pub use config::{load_config, Config};
-pub use local_fs::{FileSystemLoopError, LocalFsWalker};
+pub use local_fs::{FileSystemLoopError, LocalError, LocalFs, LocalFsWalker};
 pub use remote_fs::{
-    Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFs,
-    TagFile, TagId, UntagFile,
+    Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFs, TagFile,
+    TagId, UntagFile,
 };
 pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};
 
-use local_fs::execute as execute_locally;
-
-pub use updater::{InitError, Initialized, LocalError, Uninitialized};
+pub use updater::{InitError, Initialized, Uninitialized};
 
 trait FileSystem {
     async fn create_repo(&mut self) -> Result<Repository, InitError>;

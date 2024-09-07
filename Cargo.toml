@@ -17,7 +17,7 @@ reqwest = "0.12.3"
 serde = { version = "1.0.158", features = ["derive"] }
 serde-query = "0.2.0"
 serde_path_to_error = "0.1.11"
-snafu = { version = "0.8.2", features = ["backtraces", "rust_1_61", "futures"] }
+snafu = { version = "0.8.2", features = ["futures"] }
 termtree = "0.4.1"
 tokio = { version = "1.26.0", features = ["full"] }
 tracing = "0.1.37"

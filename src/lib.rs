@@ -27,7 +27,10 @@ pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};
 
 pub use updater::{InitError, Initialized, Uninitialized};
 
-#[allow(async_fn_in_trait, reason = "Implementations don't return Send+Sync futures anyway due to limitation in bimap")]
+#[allow(
+    async_fn_in_trait,
+    reason = "Implementations don't return Send+Sync futures anyway due to limitation in bimap"
+)]
 pub trait FileSystem {
     async fn create_repo(&mut self) -> Result<Repository, InitError>;
     async fn update_tags<I>(&mut self, commands: I)

@@ -157,6 +157,8 @@ impl RemoteFs {
                     // for this file tag but it will be right now. This will lead to
                     // issues in the next reverse direction run with tags being reset to the previous
                     // state.
+                    // This can especially happen when a directory is tagged in Nextcloud as at least
+                    // BTRFS does not support tagging directories.
                     error!("Failed to update tag {tag} for file {path}: {e}",);
                 }
             }

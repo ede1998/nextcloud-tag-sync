@@ -14,8 +14,8 @@ use crate::{
 
 use super::{common::LimitedConcurrency, DeserializeError, GetFileId, RequestError};
 
-type FileMap = bimap::BiHashMap<FileId, SyncedPath>;
-type TagMap = bimap::BiHashMap<TagId, Tag>;
+pub type FileMap = bimap::BiHashMap<FileId, SyncedPath>;
+pub type TagMap = bimap::BiHashMap<TagId, Tag>;
 
 #[derive(Debug)]
 pub struct RemoteFs {

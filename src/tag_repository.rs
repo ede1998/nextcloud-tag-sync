@@ -154,7 +154,11 @@ impl FromStr for Tags {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tags = s.split(',').filter_map(Tag::new_or_log_error).collect();
+        let tags = if s.is_empty() {
+            HashSet::default()
+        } else {
+            s.split(',').filter_map(Tag::new_or_log_error).collect()
+        };
         Ok(Self(tags))
     }
 }

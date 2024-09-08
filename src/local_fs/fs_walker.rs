@@ -31,16 +31,15 @@ impl<'a> LocalFsWalker<'a> {
                     continue;
                 };
 
-                match get_tags_of_file(path, self.tag_property_name) {
-                    Ok((path, tags)) => {
-                        if !tags.is_empty() {
+                match get_tags_of_file(&path, self.tag_property_name) {
+                    Ok(tags) => {
+                        if tags.is_empty() {
+                            debug!("skipping file: {}", path.display());
+                        } else {
                             repo.insert_local(&path, tags);
                         }
                     }
                     Err(FileError::IsDirectory { .. }) => {}
-                    Err(err @ FileError::Untagged { .. }) => {
-                        debug!("skipping file: {err}");
-                    }
                     Err(err) => error!("skipping file: {err}"),
                 }
             }

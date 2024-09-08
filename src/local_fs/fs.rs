@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use futures::FutureExt as _;
 use snafu::prelude::*;
@@ -64,9 +67,8 @@ fn run_command(
 ) -> Result<(), FileError> {
     let path = cmd.path.local_file(prefixes);
 
-    let (path, mut tags) = match get_tags_of_file(path, tag_property_name) {
+    let mut tags = match get_tags_of_file(&path, tag_property_name) {
         Ok(ok) => ok,
-        Err(FileError::Untagged { path }) => (path, Tags::default()),
         Err(err) => return Err(err),
     };
 
@@ -83,23 +85,26 @@ fn run_command(
     Ok(())
 }
 
-pub fn get_tags_of_file(
-    path: PathBuf,
-    tag_property_name: &str,
-) -> Result<(PathBuf, Tags), FileError> {
+/// Load all tags of the given local file using its extended attributes.
+///
+/// # Errors
+///
+/// This function will return an error if any of these is true:
+/// - the file has no tags
+/// - any tag is invalid
+/// - the path is not a file
+pub fn get_tags_of_file(path: &Path, tag_property_name: &str) -> Result<Tags, FileError> {
     ensure!(path.is_file(), IsDirectorySnafu { path });
 
     debug!("reading tags of file {}", path.display());
 
-    let tag = xattr::get(&path, tag_property_name)
-        .with_context(|_| XAttrSnafu { path: path.clone() })?
+    let tag = xattr::get(path, tag_property_name)
+        .with_context(|_| XAttrSnafu { path })?
         .unwrap_or_default();
-    let tag = String::from_utf8(tag).with_context(|_| TagsNotUtf8Snafu { path: path.clone() })?;
-
-    ensure!(!tag.is_empty(), UntaggedSnafu { path });
+    let tag = String::from_utf8(tag).with_context(|_| TagsNotUtf8Snafu { path })?;
 
     #[allow(unstable_name_collisions)]
-    Ok((path, tag.parse().into_ok()))
+    Ok(tag.parse().into_ok())
 }
 
 #[derive(Debug, Snafu)]
@@ -116,8 +121,6 @@ pub enum FileError {
         path: PathBuf,
         source: std::string::FromUtf8Error,
     },
-    #[snafu(display("no tags on file {}", path.display()))]
-    Untagged { path: PathBuf },
 }
 
 #[derive(Debug, Snafu)]

@@ -52,21 +52,21 @@ impl Parse for ListTags {
 }
 
 #[derive(Debug, serde_query::Deserialize)]
-struct MultiStatus {
+pub struct MultiStatus {
     #[query(".response.[].propstat.prop")]
-    props: Vec<Prop>,
+    pub props: Vec<Prop>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
-struct Prop {
+pub struct Prop {
     #[serde(deserialize_with = "empty_as_none")]
-    id: Option<TagId>,
-    display_name: Option<String>,
+    pub id: Option<TagId>,
+    pub display_name: Option<String>,
     #[serde(deserialize_with = "empty_as_none")]
-    user_visible: Option<bool>,
+    pub user_visible: Option<bool>,
     #[serde(deserialize_with = "empty_as_none")]
-    user_assignable: Option<bool>,
+    pub user_assignable: Option<bool>,
 }
 
 #[cfg(test)]

@@ -177,6 +177,11 @@ pub fn str_to_method(method: &str) -> reqwest::Method {
 
 pub type DeserializeError = serde_path_to_error::Error<quick_xml::DeError>;
 
+/// Parse the string to a T. If an error occurs, its path is added to the error.
+///
+/// # Errors
+///
+/// This function will return an error if deserialization fails.
 pub fn parse<'de, T: serde::Deserialize<'de>>(input: &'de str) -> Result<T, DeserializeError> {
     let deserializer = &mut quick_xml::de::Deserializer::from_str(input);
     serde_path_to_error::deserialize(deserializer)

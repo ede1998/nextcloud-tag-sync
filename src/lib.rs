@@ -18,10 +18,13 @@ use tag_repository::SyncedPath;
 
 pub use commands::*;
 pub use config::{load_config, Config};
-pub use local_fs::{FileSystemLoopError, LocalError, LocalFs, LocalFsWalker};
+pub use local_fs::{
+    get_tags_of_file, FileError, FileSystemLoopError, LocalError, LocalFs, LocalFsWalker,
+};
 pub use remote_fs::{
-    Body, Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, Parse,
-    RemoteFs, Request, TagFile, TagId, UntagFile,
+    parse, Body, Connection, CreateTag, DeserializeError, FileId, FileMap, ListFilesWithTag,
+    ListTags, ListTagsError, ListTagsMultiStatus, Parse, RemoteFs, Request, TagFile, TagId, TagMap,
+    UntagFile,
 };
 pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};
 

@@ -1,24 +1,145 @@
 mod common;
 
-use std::path::Path;
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, LazyLock},
+};
+use tempfile::TempDir;
+use test_log::test;
 
-use common::Nextcloud;
+use common::{Nextcloud, Result};
+use nextcloud_tag_sync::{Config, PrefixMapping, Side, Uninitialized};
+use url::Url;
+use walkdir::WalkDir;
 
-#[tokio::test]
-async fn test_redis() -> Result<(), Box<dyn std::error::Error + 'static>> {
+static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "manual-testing/test_folder".into());
+const REMOTE_DIR: &str = "test_folder";
+
+fn path_to_str(p: &Path) -> &str {
+    p.as_os_str().to_str().expect("non-UTF8 path")
+}
+
+struct TestEnv {
+    pub keep_side_on_conflict: Side,
+    pub prefixes: Vec<PrefixMapping>,
+    pub nextcloud_instance: Url,
+    pub user: String,
+    pub token: String,
+    pub temp_dir: TempDir,
+    pub container: Nextcloud,
+}
+
+impl TestEnv {
+    pub async fn new() -> Self {
+        let container = Nextcloud::start()
+            .await
+            .expect("Failed to start Nextcloud container");
+        Self {
+            keep_side_on_conflict: Side::Both,
+            prefixes: Vec::new(),
+            nextcloud_instance: container.url().await.expect("Failed to read Nextcloud URL"),
+            user: Nextcloud::ADMIN_USER.to_owned(),
+            token: Nextcloud::ADMIN_PASSWORD.to_owned(),
+            temp_dir: tempfile::tempdir().expect("Failed to create temp dir"),
+            container,
+        }
+    }
+
+    pub async fn with_prefix(
+        mut self,
+        local: impl Into<PathBuf>,
+        remote: impl Into<PathBuf>,
+    ) -> Self {
+        let mapping = PrefixMapping::new(local.into(), remote.into());
+
+        async fn copy_recursive(temp_dir: &TempDir, mapping: &PrefixMapping) -> Result<()> {
+            for entry in WalkDir::new(mapping.local()) {
+                let entry = entry?;
+                let meta = entry.metadata()?;
+                let source = entry.path();
+                let target = temp_dir.path().join(source);
+                if meta.is_dir() {
+                    tokio::fs::create_dir_all(target).await?;
+                } else if meta.is_file() {
+                    tokio::fs::copy(source, target).await?;
+                }
+            }
+            Ok(())
+        }
+
+        copy_recursive(&self.temp_dir, &mapping)
+            .await
+            .expect("Failed to recursively copy files");
+
+        self.container
+            .upload(path_to_str(mapping.remote()), mapping.local())
+            .await
+            .expect("Failed to upload files to container");
+
+        self.prefixes.push(mapping);
+
+        self
+    }
+
+    pub fn local_dir(&self, index: usize) -> &Path {
+        self.prefixes[index].local()
+    }
+
+    pub fn remote_dir(&self, index: usize) -> &str {
+        path_to_str(self.prefixes[index].remote())
+    }
+
+    pub fn config(&self) -> Config {
+        Config {
+            keep_side_on_conflict: self.keep_side_on_conflict,
+            prefixes: self.prefixes.clone(),
+            nextcloud_instance: self.nextcloud_instance.clone(),
+            user: self.user.clone(),
+            token: self.token.clone(),
+            max_concurrent_requests: 100,
+            ..Default::default()
+        }
+    }
+
+    pub fn arc_config(&self) -> Arc<Config> {
+        Arc::new(self.config())
+    }
+}
+
+#[test(tokio::test)]
+async fn sync_tags_basic() -> Result {
     let mut container = Nextcloud::start().await?;
-    let local_dir = Path::new("manual-testing/test_folder");
-    let remote_dir = "squirtle/test_folder";
-    container.upload(remote_dir, local_dir).await?;
-    container.sync_tags(remote_dir, local_dir).await?;
-    let tags = container
-        .file_tags("squirtle/test_folder/dummy/please.jpg")
-        .await?;
+    container.upload(REMOTE_DIR, &LOCAL_DIR).await?;
+    container.sync_tags(REMOTE_DIR, &LOCAL_DIR).await?;
+    let tags = container.file_tags("test_folder/dummy/please.jpg").await?;
     assert_eq!(tags, "more-tags please".parse()?);
-    // sleep(Duration::from_secs(60)).await;
     Ok(())
 }
 
+#[test(tokio::test)]
+async fn run_initial_sync_to_remote() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
+        .await;
+
+    let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+
+    insta::assert_yaml_snapshot!(initialized.repository());
+
+    let tags_ignore_txt = env
+        .container
+        .file_tags(&format!("{REMOTE_DIR}/foo/ignore.txt"))
+        .await?;
+    assert_eq!(tags_ignore_txt, "yellow".parse()?);
+    let tags_please_jpg = env
+        .container
+        .file_tags(&format!("{REMOTE_DIR}/dummy/please.jpg"))
+        .await?;
+    assert_eq!(tags_please_jpg, "more-tags please".parse()?);
+
+    Ok(())
+}
 // sync local to remote, no tags remote
 // sync remote to local, no tags local
 // sync with pre-existing tags on both sides

@@ -15,7 +15,7 @@ use crate::newtype;
 
 newtype!(PrefixMappingId, usize);
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct SyncedPath {
     prefix_id: PrefixMappingId,
     path: PathBuf,
@@ -101,7 +101,7 @@ impl<'a> std::fmt::Display for CharacterPrintHelper<'a> {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Tag(String);
 
 impl Tag {
@@ -147,7 +147,7 @@ impl FromStr for Tag {
     }
 }
 
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Tags(HashSet<Tag>);
 
 impl FromStr for Tags {
@@ -281,7 +281,7 @@ impl PrefixMapping {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Repository {
     prefixes: Vec<PrefixMapping>,
     files: BTreeMap<SyncedPath, Tags>,

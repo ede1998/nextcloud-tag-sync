@@ -26,7 +26,7 @@ pub use remote_fs::{
     ListTags, ListTagsError, ListTagsMultiStatus, Parse, RemoteFs, Request, TagFile, TagId, TagMap,
     UntagFile,
 };
-pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};
+pub use tag_repository::{PrefixMapping, Repository, Side, Tag, Tags};
 
 pub use updater::{InitError, Initialized, Uninitialized};
 

@@ -1,0 +1,15 @@
+---
+source: tests/basic.rs
+assertion_line: 46
+expression: initialized.repository()
+---
+prefixes:
+  - local: manual-testing/test_folder
+    remote: test_folder
+files:
+  ? prefix_id: 0
+    path: dummy/please.jpg
+  : - more-tags please
+  ? prefix_id: 0
+    path: foo/ignore.txt
+  : - yellow

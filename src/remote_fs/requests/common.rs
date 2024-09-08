@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use askama::Template;
 use reqwest::header::{HeaderMap, CONTENT_TYPE};
 use snafu::{prelude::*, ResultExt};
-use tracing::{debug, trace};
+use tracing::{debug, error, info, trace};
 use url::Url;
 
 use crate::Config;
@@ -31,48 +31,68 @@ impl Connection {
     where
         T: Request + Parse + Send,
     {
-        let url = request.url(&self.host, &self.user);
-        let method = request.method();
+        loop {
+            let url = request.url(&self.host, &self.user);
+            let method = request.method();
 
-        debug!("Starting request {method} {url}");
-        let (payload, headers) = if true {
-            let mut request_builder = self
-                .client
-                .request(method, url)
-                .basic_auth(&self.user, Some(&self.token));
+            debug!("Starting request {method} {url}");
+            let (payload, headers, error) = if true {
+                let mut request_builder = self
+                    .client
+                    .request(method, url)
+                    .basic_auth(&self.user, Some(&self.token));
 
-            match request.body() {
-                Body::Askama { content, mime_type } => {
-                    let body = content.context(AskamaSnafu)?;
-                    request_builder = request_builder.header(CONTENT_TYPE, mime_type).body(body);
+                match request.body() {
+                    Body::Askama { content, mime_type } => {
+                        let body = content.context(AskamaSnafu)?;
+                        request_builder =
+                            request_builder.header(CONTENT_TYPE, mime_type).body(body);
+                    }
+                    Body::Empty => {}
+                    Body::Raw(data) => {
+                        request_builder = request_builder.body(data);
+                    }
                 }
-                Body::Empty => {}
-                Body::Raw(data) => {
-                    request_builder = request_builder.body(data);
+
+                let response = request_builder.send().await.context(ReqwestSnafu)?;
+                let error = response.error_for_status_ref().err();
+
+                let headers = response.headers().clone();
+                let body = response.text().await.context(ReqwestSnafu)?;
+
+                (body, headers, error)
+            } else {
+                //read_sample_data(&method, &url, &body)
+                todo!()
+            };
+
+            if let Some(error) = error {
+                error!("Received payload {payload} and headers {headers:?}");
+                if is_database_lock_error(&error, &payload) {
+                    info!("Retrying because of transient error reason locked DB");
+                    continue;
                 }
+                return Err(error).context(ReqwestSnafu);
             }
 
-            let response = request_builder
-                .send()
-                .await
-                .context(ReqwestSnafu)?
-                .error_for_status()
-                .context(ReqwestSnafu)?;
+            trace!("Received payload {payload} and headers {headers:?}");
 
-            let headers = response.headers().clone();
-            let body = response.text().await.context(ReqwestSnafu)?;
+            // update_sample_data(&method1, &url1, &body1, &payload).await;
 
-            (body, headers)
-        } else {
-            //read_sample_data(&method, &url, &body)
-            todo!()
-        };
-        trace!("Received payload {payload} and headers {headers:?}");
-
-        // update_sample_data(&method1, &url1, &body1, &payload).await;
-
-        T::parse(&headers, &payload).context(DeserializeSnafu)
+            return T::parse(&headers, &payload).context(DeserializeSnafu);
+        }
     }
+}
+
+fn is_database_lock_error(error: &reqwest::Error, payload: &str) -> bool {
+    let Some(status) = error.status() else {
+        return false;
+    };
+    if status.is_server_error() && payload.contains("LockWaitTimeoutException") {
+        error!("Request failed: {}", error);
+        return true;
+    }
+    false
 }
 
 #[allow(

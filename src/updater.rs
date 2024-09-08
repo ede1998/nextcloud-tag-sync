@@ -68,6 +68,7 @@ impl Uninitialized {
     }
 }
 
+#[derive(Debug)]
 pub struct Initialized {
     repo: Repository,
     remote_fs: RemoteFs,
@@ -75,6 +76,11 @@ pub struct Initialized {
 }
 
 impl Initialized {
+    #[must_use]
+    pub const fn repository(&self) -> &Repository {
+        &self.repo
+    }
+
     /// Computes changes of the local tags compared to the cache and uploads all changes to the remote.
     ///
     /// # Errors

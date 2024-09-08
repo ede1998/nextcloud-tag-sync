@@ -15,6 +15,7 @@ use crate::{
 
 use super::LocalFsWalker;
 
+#[derive(Debug)]
 pub struct LocalFs {
     config: Arc<Config>,
 }

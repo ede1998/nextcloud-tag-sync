@@ -328,9 +328,9 @@ impl Repository {
     }
 
     /// Computes the differences between self and other file tag repository.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if the synchronization prefixes between the repositories
     /// don't match. In this case, the results would be garbage.
     #[must_use]

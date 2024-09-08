@@ -33,14 +33,6 @@ impl Connection {
     {
         let url = request.url(&self.host, &self.user);
         let method = request.method();
-        let (body, mime_type) = match request.body() {
-            Some(body) => (body.content.context(AskamaSnafu)?, body.mime_type),
-            None => (String::new(), ""),
-        };
-
-        let url1 = url.clone();
-        let method1 = method.clone();
-        let body1 = body.clone();
 
         debug!("Starting request {method} {url}");
         let (payload, headers) = if true {
@@ -49,8 +41,15 @@ impl Connection {
                 .request(method, url)
                 .basic_auth(&self.user, Some(&self.token));
 
-            if !body.is_empty() {
-                request_builder = request_builder.header(CONTENT_TYPE, mime_type).body(body);
+            match request.body() {
+                Body::Askama { content, mime_type } => {
+                    let body = content.context(AskamaSnafu)?;
+                    request_builder = request_builder.header(CONTENT_TYPE, mime_type).body(body);
+                }
+                Body::Empty => {}
+                Body::Raw(data) => {
+                    request_builder = request_builder.body(data);
+                }
             }
 
             let response = request_builder
@@ -70,15 +69,17 @@ impl Connection {
         };
         trace!("Received payload {payload} and headers {headers:?}");
 
-        if false {
-            update_sample_data(&method1, &url1, &body1, &payload).await;
-        }
+        // update_sample_data(&method1, &url1, &body1, &payload).await;
 
         T::parse(&headers, &payload).context(DeserializeSnafu)
     }
 }
 
-async fn update_sample_data(method: &reqwest::Method, url: &url::Url, body: &str, payload: &str) {
+#[allow(
+    dead_code,
+    reason = "Used to save sample data for testing by manually changing code to call this function"
+)]
+async fn update_sample_data(method: &reqwest::Method, url: &url::Url, body: &[u8], payload: &str) {
     use std::io::Write;
 
     static COUNT: tokio::sync::Mutex<usize> = tokio::sync::Mutex::const_new(0);
@@ -91,13 +92,13 @@ async fn update_sample_data(method: &reqwest::Method, url: &url::Url, body: &str
     let mut f = std::fs::File::create(format!("request-{count}.txt")).unwrap();
     writeln!(f, "{method}").unwrap();
     writeln!(f, "{url}").unwrap();
-    writeln!(f, "{body}").unwrap();
+    writeln!(f, "{}", String::from_utf8_lossy(body)).unwrap();
     write!(f, "{payload}").unwrap();
 }
 
 #[allow(
     dead_code,
-    reason = "Used to save sample data for testing by manually changing code to call this function"
+    reason = "Used to read sample data from local file for testing by manual edit"
 )]
 fn read_sample_data(method: &reqwest::Method, url: &url::Url, body: &str) -> String {
     use std::io::Read;
@@ -122,17 +123,25 @@ pub trait Request {
         url.join(&self.endpoint()).expect("failed to create URL")
     }
 
-    fn body(&self) -> Option<Body>;
+    fn body(&self) -> Body {
+        Body::default()
+    }
 }
 
-pub struct Body {
-    pub content: askama::Result<String>,
-    pub mime_type: &'static str,
+#[derive(Debug, Default)]
+pub enum Body {
+    Askama {
+        content: askama::Result<String>,
+        mime_type: &'static str,
+    },
+    Raw(Vec<u8>),
+    #[default]
+    Empty,
 }
 
 impl<T: Template> From<&T> for Body {
     fn from(value: &T) -> Self {
-        Self {
+        Self::Askama {
             content: value.render(),
             mime_type: T::MIME_TYPE,
         }
@@ -142,6 +151,11 @@ impl<T: Template> From<&T> for Body {
 pub trait Parse {
     type Output;
     type Error: snafu::Error + 'static;
+    /// Parses the response body of the request to the nextcloud API.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if parsing failed.
     fn parse(headers: &HeaderMap, body: &str) -> Result<Self::Output, Self::Error>;
 }
 

@@ -38,7 +38,6 @@ impl FileSystem for LocalFs {
     async fn update_tags<I>(&mut self, commands: I)
     where
         I: IntoIterator<Item = Command> + Send,
-
     {
         for cmd in commands {
             let path = cmd.path.clone();

@@ -22,8 +22,8 @@ impl Request for ListTags {
         "systemtags".into()
     }
 
-    fn body(&self) -> Option<Body> {
-        Some(self.into())
+    fn body(&self) -> Body {
+        self.into()
     }
 }
 

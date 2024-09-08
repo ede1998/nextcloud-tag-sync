@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::Infallible};
 
 use reqwest::header::HeaderMap;
 
-use super::{Body, Parse, Request};
+use super::{Parse, Request};
 use crate::remote_fs::{FileId, TagId};
 
 pub struct TagFile {
@@ -24,10 +24,6 @@ impl Request for TagFile {
 
     fn endpoint(&self) -> Cow<str> {
         format!("systemtags-relations/files/{}/{}", self.file, self.tag).into()
-    }
-
-    fn body(&self) -> Option<Body> {
-        None
     }
 }
 

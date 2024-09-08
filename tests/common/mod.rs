@@ -1,8 +1,14 @@
-use reqwest::{Method, RequestBuilder};
+use create_dir::CreateDirectory;
+use nextcloud_tag_sync::{Config, Connection};
 use testcontainers::{core::WaitFor, runners::AsyncRunner as _, ContainerAsync, Image};
+use upload_file::UploadFile;
+use url::Url;
 use walkdir::WalkDir;
 
 pub type Result<T = (), E = Box<dyn std::error::Error + 'static>> = std::result::Result<T, E>;
+
+mod create_dir;
+mod upload_file;
 
 pub struct NextcloudImage;
 
@@ -38,8 +44,9 @@ impl Image for NextcloudImage {
 }
 
 pub struct Nextcloud {
+    #[allow(dead_code, reason = "Container would be stopped on drop")]
     pub container: ContainerAsync<NextcloudImage>,
-    client: reqwest::Client,
+    connection: Connection,
 }
 
 impl Nextcloud {
@@ -48,40 +55,27 @@ impl Nextcloud {
 
     pub async fn start() -> Result<Self> {
         let container = NextcloudImage.start().await?;
+        let host = container.get_host().await?;
+        let host_port = container.get_host_port_ipv4(80).await?;
+        let url = Url::parse(&format!("http://{host}:{host_port}"))?;
+        println!("Container started at {}", url.as_str());
         Ok(Self {
             container,
-            client: reqwest::Client::new(),
+            connection: Connection::from_config(&Config {
+                nextcloud_instance: url,
+                user: Self::ADMIN_USER.to_owned(),
+                token: Self::ADMIN_PASSWORD.to_owned(),
+                ..Default::default()
+            }),
         })
     }
 
-    pub async fn url(&self) -> Result<String> {
-        let host = self.container.get_host().await?;
-        let host_port = self.container.get_host_port_ipv4(80).await?;
-        Ok(format!("http://{host}:{host_port}"))
-    }
-
-    // # delete existing files in test folder
-    // curl --silent --user "$NC_USER:$NC_PASSWORD" 'http://'"$NC_HOST":"$NC_PORT"'/remote.php/dav/files/'"$NC_USER/$NC_FOLDER" --request DELETE > /dev/null || true
-
     pub async fn upload(&self, nc_base_folder: &str, source: &std::path::Path) -> Result {
-        let root_file_url = format!(
-            "{}/remote.php/dav/files/{}",
-            self.url().await?,
-            Self::ADMIN_USER
-        );
-        let base_folder_url = format!("{root_file_url}/{nc_base_folder}");
-
         // First create folder structure for upload
-        async fn mkdir(this: &Nextcloud, dir_url: impl AsRef<str>) -> Result {
-            this.request(Method::from_bytes(b"MKCOL")?, dir_url.as_ref())
-                .send()
-                .await?
-                .error_for_status()?;
-            Ok(())
-        }
-
         for segments in GrowingSegments::new(nc_base_folder, '/') {
-            mkdir(self, format!("{root_file_url}/{segments}")).await?;
+            self.connection
+                .request(CreateDirectory::new(segments))
+                .await?;
         }
 
         let directories = WalkDir::new(source)
@@ -91,7 +85,12 @@ impl Nextcloud {
         for entry in directories {
             let entry = entry?;
             let path = entry.path().strip_prefix(source)?;
-            mkdir(self, format!("{base_folder_url}/{}", path.display())).await?;
+            self.connection
+                .request(CreateDirectory::new(format!(
+                    "{nc_base_folder}/{}",
+                    path.display()
+                )))
+                .await?;
         }
 
         // Now upload all files
@@ -101,22 +100,16 @@ impl Nextcloud {
             if !entry.file_type().is_file() {
                 continue;
             }
-            let file_contents = tokio::fs::read(entry.path()).await?;
             let path = entry.path().strip_prefix(source)?;
-            dbg!(self.request(Method::PUT, format!("{base_folder_url}/{}", path.display()))
-                            .body(file_contents)
-                            .send()
-                            .await?
-                            .error_for_status()?);
+            self.connection
+                .request(UploadFile::new(
+                    format!("{nc_base_folder}/{}", path.display()),
+                    tokio::fs::read(entry.path()).await?,
+                ))
+                .await?;
         }
 
         Ok(())
-    }
-
-    fn request<U: reqwest::IntoUrl>(&self, method: Method, url: U) -> RequestBuilder {
-        self.client
-            .request(method, url)
-            .basic_auth(Self::ADMIN_USER, Some(Self::ADMIN_PASSWORD))
     }
 }
 

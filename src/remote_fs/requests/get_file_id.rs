@@ -35,8 +35,8 @@ impl Request for GetFileId {
         host.join(&self.endpoint()).expect("failed to create URL")
     }
 
-    fn body(&self) -> Option<Body> {
-        Some(self.into())
+    fn body(&self) -> Body {
+        self.into()
     }
 }
 

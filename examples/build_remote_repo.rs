@@ -17,7 +17,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             ),
         ],
         ..load_config()?
-    }.into();
+    }
+    .into();
 
     let repo = RemoteFs::new(config).create_repo().await?;
 

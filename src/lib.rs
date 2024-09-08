@@ -20,8 +20,8 @@ pub use commands::*;
 pub use config::{load_config, Config};
 pub use local_fs::{FileSystemLoopError, LocalError, LocalFs, LocalFsWalker};
 pub use remote_fs::{
-    Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, RemoteFs, TagFile,
-    TagId, UntagFile,
+    Body, Connection, CreateTag, FileId, ListFilesWithTag, ListTags, ListTagsError, Parse,
+    RemoteFs, Request, TagFile, TagId, UntagFile,
 };
 pub use tag_repository::{PrefixMapping, Repository, Tag, Tags};
 

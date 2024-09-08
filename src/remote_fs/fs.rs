@@ -43,16 +43,14 @@ impl RemoteFs {
             .transform(
                 |tag| async move { (tag.clone(), connection.request(CreateTag::new(tag)).await) },
             )
-            .aggregate(
-                |new_tags: &mut TagMap, (tag, result)| match result {
-                    Ok(tag_id) => {
-                        new_tags.insert(tag_id, tag);
-                    }
-                    Err(e) => {
-                        warn!("Failed to create tag {tag}: {e}");
-                    }
-                },
-            )
+            .aggregate(|new_tags: &mut TagMap, (tag, result)| match result {
+                Ok(tag_id) => {
+                    new_tags.insert(tag_id, tag);
+                }
+                Err(e) => {
+                    warn!("Failed to create tag {tag}: {e}");
+                }
+            })
             .collect_into()
             .await;
         self.tags.extend(new_tags);
@@ -104,16 +102,14 @@ impl RemoteFs {
 
         let new_files = LimitedConcurrency::new(missing_file_id_requests, *max_concurrent_requests)
             .transform(|(path, request)| async move { (path, connection.request(request).await) })
-            .aggregate(
-                |new_files: &mut FileMap, (path, result)| match result {
-                    Ok(file_id) => {
-                        new_files.insert(file_id, path);
-                    }
-                    Err(e) => {
-                        warn!("failed to create query file id for {path}: {e}");
-                    }
-                },
-            )
+            .aggregate(|new_files: &mut FileMap, (path, result)| match result {
+                Ok(file_id) => {
+                    new_files.insert(file_id, path);
+                }
+                Err(e) => {
+                    warn!("failed to create query file id for {path}: {e}");
+                }
+            })
             .collect_into()
             .await;
         self.files.extend(new_files);

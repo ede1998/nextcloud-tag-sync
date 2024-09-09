@@ -1,12 +1,15 @@
 ---
 source: tests/basic.rs
-assertion_line: 46
+assertion_line: 196
 expression: initialized.repository()
 ---
 prefixes:
   - local: tests/data_basic
-    remote: test_folder
+    remote: /remote.php/dav/files/tester/test_folder
 files:
+  ? prefix_id: 0
+    path: bar/baz/drat.pdf
+  : - red
   ? prefix_id: 0
     path: dummy/please.jpg
   : - more-tags please

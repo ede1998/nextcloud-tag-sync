@@ -20,13 +20,11 @@ impl Request for CreateDirectory {
     }
 
     fn endpoint(&self) -> Cow<str> {
-        unimplemented!("Handled by URL");
+        (&self.path).into()
     }
 
-    fn url(&self, host: &url::Url, user: &str) -> url::Url {
-        let path = &self.path;
-        host.join(&format!("remote.php/dav/files/{user}/{path}"))
-            .expect("failed to create URL")
+    fn url(&self, host: &reqwest::Url, _user: &str) -> reqwest::Url {
+        host.join(&self.endpoint()).expect("failed to create URL")
     }
 }
 

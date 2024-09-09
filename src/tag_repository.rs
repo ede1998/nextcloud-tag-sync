@@ -264,16 +264,42 @@ impl Tags {
     }
 }
 
+fn deserialize_remote_path<'de, D>(deserializer: D) -> Result<PathBuf, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    D::Error: serde::de::Error,
+{
+    let path = PathBuf::deserialize(deserializer)?;
+    if path.starts_with(PrefixMapping::EXPECTED_PREFIX) {
+        Ok(path)
+    } else {
+        Err(serde::de::Error::invalid_value(
+            serde::de::Unexpected::Bytes(path.as_os_str().as_encoded_bytes()),
+            // Sadly, I would need an extra dependency to concat string constants at compile time
+            &"a string starting with /remote.php/dav/files/",
+        ))
+    }
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct PrefixMapping {
     local: PathBuf,
+    #[serde(deserialize_with = "deserialize_remote_path")]
     remote: PathBuf,
 }
 
 impl PrefixMapping {
-    #[must_use]
-    pub const fn new(local: PathBuf, remote: PathBuf) -> Self {
-        Self { local, remote }
+    /// Constructs a new prefix mapping.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if `remote` does not start with /remote.php/dav/files/.
+    pub fn new(local: PathBuf, remote: PathBuf) -> Result<Self, &'static str> {
+        if remote.starts_with(Self::EXPECTED_PREFIX) {
+            Ok(Self { local, remote })
+        } else {
+            Err("Remote path must start with /remote.php/dav/files/")
+        }
     }
 
     #[must_use]
@@ -285,6 +311,8 @@ impl PrefixMapping {
     pub fn remote(&self) -> &Path {
         &self.remote
     }
+
+    pub const EXPECTED_PREFIX: &str = "/remote.php/dav/files/";
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

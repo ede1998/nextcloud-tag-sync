@@ -67,7 +67,7 @@ impl Connection {
             };
 
             if let Some(error) = error {
-                error!("Received payload {payload} and headers {headers:?}");
+                error!("Received payload {payload:#} and headers {headers:#?}");
                 if is_database_lock_error(&error, &payload) {
                     info!("Retrying because of transient error reason locked DB");
                     continue;

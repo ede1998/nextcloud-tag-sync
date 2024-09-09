@@ -107,7 +107,7 @@ impl RemoteFs {
                     new_files.insert(file_id, path);
                 }
                 Err(e) => {
-                    warn!("failed to create query file id for {path}: {e}");
+                    warn!("failed to query file id for {path}: {e}");
                 }
             })
             .collect_into()

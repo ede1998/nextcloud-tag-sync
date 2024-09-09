@@ -10,11 +10,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             PrefixMapping::new(
                 "irrelevant here".into(),
                 "/remote.php/dav/files/erik/Pictures".into(),
-            ),
+            )?,
             PrefixMapping::new(
                 "irrelevant here".into(),
                 "/remote.php/dav/files/erik/Documents".into(),
-            ),
+            )?,
         ],
         ..load_config()?
     }

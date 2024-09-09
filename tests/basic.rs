@@ -13,7 +13,7 @@ use url::Url;
 use walkdir::WalkDir;
 
 static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "tests/data_basic".into());
-const REMOTE_DIR: &str = "test_folder";
+const REMOTE_DIR: &str = "/remote.php/dav/files/tester/test_folder";
 
 fn path_to_str(p: &Path) -> &str {
     p.as_os_str().to_str().expect("non-UTF8 path")
@@ -84,7 +84,7 @@ impl TestEnv {
         local: impl Into<PathBuf>,
         remote: impl Into<PathBuf>,
     ) -> Self {
-        let mapping = PrefixMapping::new(local.into(), remote.into());
+        let mapping = PrefixMapping::new(local.into(), remote.into()).expect("invalid mapping");
 
         async fn copy_recursive(temp_dir: &TempDir, mapping: &PrefixMapping) -> Result<()> {
             for entry in WalkDir::new(mapping.local()) {
@@ -145,7 +145,7 @@ async fn sync_tags_basic() -> Result {
     let mut container = Nextcloud::start().await?;
     container.upload(REMOTE_DIR, &LOCAL_DIR).await?;
     container.sync_tags(REMOTE_DIR, &LOCAL_DIR).await?;
-    let tags = container.file_tags("data_basic/dummy/please.jpg").await?;
+    let tags = container.file_tags(&format!("{REMOTE_DIR}/dummy/please.jpg")).await?;
     assert_eq!(tags, "more-tags please".parse()?);
     Ok(())
 }
@@ -166,7 +166,7 @@ async fn run_initial_sync_to_remote() -> Result {
 
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
-    insta::assert_yaml_snapshot!(initialized.repository());
+    insta::assert_yaml_snapshot!("run_initial_sync_to_remote", initialized.repository());
     let tags_ignore_txt = env.list_tags_remote(ignore_txt).await?;
     assert_eq!(tags_ignore_txt, yellow.parse()?);
     let tags_please_jpg = env.list_tags_remote(please_jpg).await?;
@@ -176,8 +176,33 @@ async fn run_initial_sync_to_remote() -> Result {
 
     Ok(())
 }
-// sync local to remote, no tags remote
-// sync remote to local, no tags local
+
+#[test(tokio::test)]
+async fn run_initial_sync_to_local() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
+        .await;
+    let ignore_txt = "foo/ignore.txt";
+    let drat_pdf = "bar/baz/drat.pdf";
+    let err_pdf = "dummy/err.pdf";
+    let yellow = "yellow";
+    let red = "red";
+    env.tag_remote(ignore_txt, yellow).await?;
+    env.tag_remote(drat_pdf, red).await?;
+
+    let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+
+    insta::assert_yaml_snapshot!("run_initial_sync_to_local", initialized.repository());
+    let tags_ignore_txt = env.list_tags_local(ignore_txt)?;
+    assert_eq!(tags_ignore_txt, yellow.parse()?);
+    let tags_drat_pdf = env.list_tags_local(drat_pdf)?;
+    assert_eq!(tags_drat_pdf, red.parse()?);
+    let tags_err_pdf = env.list_tags_local(err_pdf)?;
+    assert!(tags_err_pdf.is_empty());
+
+    Ok(())
+}
 // sync with pre-existing tags on both sides
 // already synced -> detect diff
 // test directory tagged in nextcloud

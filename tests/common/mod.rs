@@ -83,7 +83,7 @@ impl Nextcloud {
 
     pub async fn upload(&mut self, nc_base_folder: &str, source: &std::path::Path) -> Result {
         // First create folder structure for upload
-        for segments in GrowingSegments::new(nc_base_folder, '/') {
+        for segments in GrowingSegments::new(nc_base_folder, '/').skip(4) {
             self.connection
                 .request(CreateDirectory::new(segments))
                 .await?;
@@ -213,6 +213,7 @@ struct GrowingSegments<'a> {
     input: &'a str,
     index: usize,
     separator: char,
+    splits: std::str::Split<'a, char>,
 }
 
 impl<'a> GrowingSegments<'a> {
@@ -221,6 +222,7 @@ impl<'a> GrowingSegments<'a> {
             input,
             index: 0,
             separator,
+            splits: input.split(separator),
         }
     }
 }
@@ -229,17 +231,29 @@ impl<'a> Iterator for GrowingSegments<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.input.len() == self.index {
-            return None;
+        if self.input.starts_with(self.separator) && self.index == 0 {
+            self.splits.next();
         }
+        let next_split = self.splits.next()?;
+        self.index += self.separator.len_utf8();
+        self.index += next_split.len();
 
-        // Safety: The index is either 0 and hence always safe, or determined with find
-        // in a previous iteration and therefore in bounds and on a UTF-8 boundary.
-        let remainder =
-            unsafe { self.input.get_unchecked(self.index..) }.trim_start_matches(self.separator);
-        self.index = remainder.find(self.separator).unwrap_or(self.input.len());
-
-        // Safety: index was just determined with find and thus in bounds and on UTF-8 boundary.
+        // Safety: index was determined with split and adding separators and thus in bounds and on UTF-8 boundary.
         Some(unsafe { self.input.get_unchecked(..self.index) })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::GrowingSegments;
+
+    #[test]
+    fn growing_segments() {
+        let mut iter = GrowingSegments::new("/remote.php/dav/files/tester/asdf", '/');
+        assert_eq!(Some("/remote.php"), iter.next());
+        assert_eq!(Some("/remote.php/dav"), iter.next());
+        assert_eq!(Some("/remote.php/dav/files"), iter.next());
+        assert_eq!(Some("/remote.php/dav/files/tester"), iter.next());
+        assert_eq!(Some("/remote.php/dav/files/tester/asdf"), iter.next());
     }
 }

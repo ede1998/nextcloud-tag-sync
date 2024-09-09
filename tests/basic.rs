@@ -8,11 +8,11 @@ use tempfile::TempDir;
 use test_log::test;
 
 use common::{Nextcloud, Result};
-use nextcloud_tag_sync::{Config, PrefixMapping, Side, Uninitialized};
+use nextcloud_tag_sync::{Config, PrefixMapping, Side, Tags, Uninitialized};
 use url::Url;
 use walkdir::WalkDir;
 
-static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "manual-testing/test_folder".into());
+static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "tests/data_basic".into());
 const REMOTE_DIR: &str = "test_folder";
 
 fn path_to_str(p: &Path) -> &str {
@@ -43,6 +43,40 @@ impl TestEnv {
             temp_dir: tempfile::tempdir().expect("Failed to create temp dir"),
             container,
         }
+    }
+
+    pub fn tag_local(&self, file: impl AsRef<Path>, new_tag: &str) -> Result {
+        let file = self.local_dir(0).join(file.as_ref());
+        let new_tag = new_tag.parse()?;
+        let tag_property = self.config().local_tag_property_name;
+
+        let tags = xattr::get(&file, &tag_property)?.unwrap_or_default();
+        let mut tags: Tags = String::from_utf8(tags)?.parse()?;
+
+        tags.insert_one(new_tag);
+        let stringified_tags = tags.to_string();
+        xattr::set(&file, &tag_property, stringified_tags.as_bytes())?;
+        Ok(())
+    }
+
+    pub async fn tag_remote(&mut self, file: &str, new_tag: &str) -> Result {
+        let file = format!("{}/{file}", self.remote_dir(0));
+        let new_tag = new_tag.parse()?;
+        self.container.tag(&file, &new_tag).await?;
+        Ok(())
+    }
+
+    pub fn list_tags_local(&self, file: impl AsRef<Path>) -> Result<Tags> {
+        let file = self.local_dir(0).join(file.as_ref());
+        let tag_property = self.config().local_tag_property_name;
+
+        let tags = xattr::get(&file, &tag_property)?.unwrap_or_default();
+        Ok(String::from_utf8(tags)?.parse()?)
+    }
+
+    pub async fn list_tags_remote(&mut self, file: &str) -> Result<Tags> {
+        let file = format!("{}/{file}", self.remote_dir(0));
+        self.container.file_tags(&file).await
     }
 
     pub async fn with_prefix(
@@ -111,7 +145,7 @@ async fn sync_tags_basic() -> Result {
     let mut container = Nextcloud::start().await?;
     container.upload(REMOTE_DIR, &LOCAL_DIR).await?;
     container.sync_tags(REMOTE_DIR, &LOCAL_DIR).await?;
-    let tags = container.file_tags("test_folder/dummy/please.jpg").await?;
+    let tags = container.file_tags("data_basic/dummy/please.jpg").await?;
     assert_eq!(tags, "more-tags please".parse()?);
     Ok(())
 }
@@ -122,21 +156,23 @@ async fn run_initial_sync_to_remote() -> Result {
         .await
         .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
         .await;
+    let ignore_txt = "foo/ignore.txt";
+    let please_jpg = "dummy/please.jpg";
+    let err_pdf = "dummy/err.pdf";
+    let yellow = "yellow";
+    let more_tags_please = "more-tags please";
+    env.tag_local(ignore_txt, yellow)?;
+    env.tag_local(please_jpg, more_tags_please)?;
 
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
     insta::assert_yaml_snapshot!(initialized.repository());
-
-    let tags_ignore_txt = env
-        .container
-        .file_tags(&format!("{REMOTE_DIR}/foo/ignore.txt"))
-        .await?;
-    assert_eq!(tags_ignore_txt, "yellow".parse()?);
-    let tags_please_jpg = env
-        .container
-        .file_tags(&format!("{REMOTE_DIR}/dummy/please.jpg"))
-        .await?;
-    assert_eq!(tags_please_jpg, "more-tags please".parse()?);
+    let tags_ignore_txt = env.list_tags_remote(ignore_txt).await?;
+    assert_eq!(tags_ignore_txt, yellow.parse()?);
+    let tags_please_jpg = env.list_tags_remote(please_jpg).await?;
+    assert_eq!(tags_please_jpg, more_tags_please.parse()?);
+    let tags_err_pdf = env.list_tags_remote(err_pdf).await?;
+    assert!(tags_err_pdf.is_empty());
 
     Ok(())
 }
@@ -144,3 +180,6 @@ async fn run_initial_sync_to_remote() -> Result {
 // sync remote to local, no tags local
 // sync with pre-existing tags on both sides
 // already synced -> detect diff
+// test directory tagged in nextcloud
+
+// TODO: use  test folder with pre-existing tags for run_initial_sync_to_remote and then implement more tests

@@ -4,7 +4,7 @@ assertion_line: 46
 expression: initialized.repository()
 ---
 prefixes:
-  - local: manual-testing/test_folder
+  - local: tests/data_basic
     remote: test_folder
 files:
   ? prefix_id: 0

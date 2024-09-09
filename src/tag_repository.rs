@@ -163,6 +163,12 @@ impl FromStr for Tags {
     }
 }
 
+impl<const N: usize> From<[Tag; N]> for Tags {
+    fn from(value: [Tag; N]) -> Self {
+        Self(value.into_iter().collect())
+    }
+}
+
 impl std::fmt::Display for Tags {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let tags = self

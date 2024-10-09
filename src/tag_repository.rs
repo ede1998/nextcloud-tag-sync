@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::fmt::Debug;
 use std::iter::Peekable;
@@ -148,14 +148,14 @@ impl FromStr for Tag {
 }
 
 #[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Tags(HashSet<Tag>);
+pub struct Tags(BTreeSet<Tag>);
 
 impl FromStr for Tags {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tags = if s.is_empty() {
-            HashSet::default()
+            BTreeSet::default()
         } else {
             s.split(',').filter_map(Tag::new_or_log_error).collect()
         };
@@ -184,7 +184,7 @@ impl std::fmt::Display for Tags {
 impl IntoIterator for Tags {
     type Item = Tag;
 
-    type IntoIter = std::collections::hash_set::IntoIter<Self::Item>;
+    type IntoIter = std::collections::btree_set::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -214,7 +214,7 @@ impl<'a> FromIterator<&'a str> for Tags {
 }
 
 impl Deref for Tags {
-    type Target = HashSet<Tag>;
+    type Target = BTreeSet<Tag>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -228,13 +228,13 @@ impl Debug for Tags {
 }
 
 impl Tags {
-    fn new() -> Self {
-        Self(HashSet::new())
+    const fn new() -> Self {
+        Self(BTreeSet::new())
     }
 
     fn diff(self, Self(mut right): Self) -> TagDiff {
-        let mut left = HashSet::new();
-        let mut both = HashSet::new();
+        let mut left = BTreeSet::new();
+        let mut both = BTreeSet::new();
 
         for tag in self.0 {
             if right.take(&tag).is_none() {

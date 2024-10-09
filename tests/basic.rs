@@ -9,7 +9,7 @@ use test_log::test;
 
 use common::{Nextcloud, Result};
 use data_basic::*;
-use nextcloud_tag_sync::{Config, PrefixMapping, Side, Tags, Uninitialized};
+use nextcloud_tag_sync::{Config, PrefixMapping, Repository, Side, Tags, Uninitialized};
 use url::Url;
 use walkdir::WalkDir;
 
@@ -130,19 +130,13 @@ impl TestEnv {
         self.container.file_tags(&file).await
     }
 
-    pub async fn with_prefix(
-        mut self,
-        local: impl Into<PathBuf>,
-        remote: impl Into<PathBuf>,
-    ) -> Self {
-        let mapping = PrefixMapping::new(local.into(), remote.into()).expect("invalid mapping");
-
-        async fn copy_recursive(temp_dir: &TempDir, mapping: &PrefixMapping) -> Result<()> {
-            for entry in WalkDir::new(mapping.local()) {
+    pub async fn with_prefix(mut self, local: &Path, remote: impl Into<PathBuf>) -> Self {
+        async fn copy_recursive(source_directory: &Path, target_directory: &Path) -> Result<()> {
+            for entry in WalkDir::new(source_directory) {
                 let entry = entry?;
                 let meta = entry.metadata()?;
                 let source = entry.path();
-                let target = temp_dir.path().join(source);
+                let target = target_directory.join(source);
                 if meta.is_dir() {
                     tokio::fs::create_dir_all(target).await?;
                 } else if meta.is_file() {
@@ -152,11 +146,17 @@ impl TestEnv {
             Ok(())
         }
 
-        copy_recursive(&self.temp_dir, &mapping)
+        copy_recursive(local, self.temp_dir.path())
             .await
             .expect("Failed to recursively copy files");
 
-        tracing::info!("Copied local directory to temporary location {:?}", self.temp_dir);
+        tracing::info!(
+            "Copied local directory to temporary location {:?}",
+            self.temp_dir
+        );
+
+        let local_test_dir = self.temp_dir.path().join(local);
+        let mapping = PrefixMapping::new(local_test_dir, remote.into()).expect("invalid mapping");
 
         self.container
             .upload(path_to_str(mapping.remote()), mapping.local())
@@ -191,17 +191,28 @@ impl TestEnv {
     pub fn arc_config(&self) -> Arc<Config> {
         Arc::new(self.config())
     }
+
+    pub fn assert_snapshot(&self, name: &'static str, repo: &Repository) {
+        insta::assert_yaml_snapshot!(name, repo, {
+            ".prefixes[].local" => "/tmp/path/to/local/files"
+        });
+    }
 }
 
 #[test(tokio::test)]
 async fn sync_tags_basic() -> Result {
-    let mut container = Nextcloud::start().await?;
-    container.upload(REMOTE_DIR, &LOCAL_DIR).await?;
-    container.sync_tags(REMOTE_DIR, &LOCAL_DIR).await?;
-    let tags = container
-        .file_tags(&format!("{REMOTE_DIR}/dummy/please.jpg"))
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
+        .await;
+    env.tag_local(foo::IGNORE_TXT, tag::SPACE)?;
+
+    env.container
+        .sync_tags(REMOTE_DIR, env.prefixes[0].local())
         .await?;
-    assert_eq!(tags, "more-tags please".parse()?);
+
+    let tags = env.list_tags_remote(foo::IGNORE_TXT).await?;
+    assert_eq!(tags, *tag::SPACE_TAG);
     Ok(())
 }
 
@@ -209,14 +220,14 @@ async fn sync_tags_basic() -> Result {
 async fn run_initial_sync_to_remote() -> Result {
     let mut env = TestEnv::new()
         .await
-        .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
         .await;
     env.tag_local(foo::IGNORE_TXT, tag::YELLOW)?;
     env.tag_local(dummy::PLEASE_JPG, tag::SPACE)?;
 
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
-    insta::assert_yaml_snapshot!("run_initial_sync_to_remote", initialized.repository());
+    env.assert_snapshot("run_initial_sync_to_remote", initialized.repository());
     let tags_ignore_txt = env.list_tags_remote(foo::IGNORE_TXT).await?;
     assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
     let tags_please_jpg = env.list_tags_remote(dummy::PLEASE_JPG).await?;
@@ -231,14 +242,14 @@ async fn run_initial_sync_to_remote() -> Result {
 async fn run_initial_sync_to_local() -> Result {
     let mut env = TestEnv::new()
         .await
-        .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
         .await;
     env.tag_remote(foo::IGNORE_TXT, tag::YELLOW).await?;
     env.tag_remote(bar::baz::DRAT_PDF, tag::RED).await?;
 
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
-    insta::assert_yaml_snapshot!("run_initial_sync_to_local", initialized.repository());
+    env.assert_snapshot("run_initial_sync_to_local", initialized.repository());
     let tags_ignore_txt = env.list_tags_local(foo::IGNORE_TXT)?;
     assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
     let tags_drat_pdf = env.list_tags_local(bar::baz::DRAT_PDF)?;
@@ -253,7 +264,7 @@ async fn run_initial_sync_to_local() -> Result {
 async fn run_initial_sync_bidirectional() -> Result {
     let mut env = TestEnv::new()
         .await
-        .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
         .await;
     env.tag_local(foo::IGNORE_TXT, tag::YELLOW)?;
     env.tag_remote(foo::IGNORE_TXT, tag::YELLOW).await?;
@@ -264,7 +275,7 @@ async fn run_initial_sync_bidirectional() -> Result {
 
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
-    insta::assert_yaml_snapshot!("run_initial_sync_bidirectional", initialized.repository());
+    env.assert_snapshot("run_initial_sync_bidirectional", initialized.repository());
     {
         // check remote tags
         let tags_ignore_txt = env.list_tags_remote(foo::IGNORE_TXT).await?;

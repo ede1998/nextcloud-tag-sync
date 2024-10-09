@@ -8,12 +8,55 @@ use tempfile::TempDir;
 use test_log::test;
 
 use common::{Nextcloud, Result};
+use data_basic::*;
 use nextcloud_tag_sync::{Config, PrefixMapping, Side, Tags, Uninitialized};
 use url::Url;
 use walkdir::WalkDir;
 
 static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "tests/data_basic".into());
 const REMOTE_DIR: &str = "/remote.php/dav/files/tester/test_folder";
+
+mod tag {
+    use std::sync::LazyLock;
+
+    use nextcloud_tag_sync::Tags;
+
+    pub const YELLOW: &str = "yellow";
+    pub static YELLOW_TAG: LazyLock<Tags> = LazyLock::new(|| YELLOW.parse().unwrap());
+
+    pub const RED: &str = "red";
+    pub static RED_TAG: LazyLock<Tags> = LazyLock::new(|| RED.parse().unwrap());
+
+    pub const SPACE: &str = "more-tags please";
+    pub static SPACE_TAG: LazyLock<Tags> = LazyLock::new(|| SPACE.parse().unwrap());
+}
+
+#[allow(
+    dead_code,
+    reason = "Exact replica of the example data directory structure"
+)]
+mod data_basic {
+    pub mod bar {
+        pub const DIR: &str = "bar";
+        pub const OK_PDF: &str = "bar/ok.pdf";
+        pub mod baz {
+            pub const DIR: &str = "bar/baz";
+            pub const DRAT_PDF: &str = "bar/baz/drat.pdf";
+            pub const RANDOM_TXT: &str = "bar/baz/random.txt";
+        }
+    }
+
+    pub mod dummy {
+        pub const DIR: &str = "dummy";
+        pub const ERR_PDF: &str = "dummy/err.pdf";
+        pub const PLEASE_JPG: &str = "dummy/please.jpg";
+    }
+
+    pub mod foo {
+        pub const DIR: &str = "foo";
+        pub const IGNORE_TXT: &str = "foo/ignore.txt";
+    }
+}
 
 fn path_to_str(p: &Path) -> &str {
     p.as_os_str().to_str().expect("non-UTF8 path")
@@ -145,7 +188,9 @@ async fn sync_tags_basic() -> Result {
     let mut container = Nextcloud::start().await?;
     container.upload(REMOTE_DIR, &LOCAL_DIR).await?;
     container.sync_tags(REMOTE_DIR, &LOCAL_DIR).await?;
-    let tags = container.file_tags(&format!("{REMOTE_DIR}/dummy/please.jpg")).await?;
+    let tags = container
+        .file_tags(&format!("{REMOTE_DIR}/dummy/please.jpg"))
+        .await?;
     assert_eq!(tags, "more-tags please".parse()?);
     Ok(())
 }
@@ -156,22 +201,17 @@ async fn run_initial_sync_to_remote() -> Result {
         .await
         .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
         .await;
-    let ignore_txt = "foo/ignore.txt";
-    let please_jpg = "dummy/please.jpg";
-    let err_pdf = "dummy/err.pdf";
-    let yellow = "yellow";
-    let more_tags_please = "more-tags please";
-    env.tag_local(ignore_txt, yellow)?;
-    env.tag_local(please_jpg, more_tags_please)?;
+    env.tag_local(foo::IGNORE_TXT, tag::YELLOW)?;
+    env.tag_local(dummy::PLEASE_JPG, tag::SPACE)?;
 
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
     insta::assert_yaml_snapshot!("run_initial_sync_to_remote", initialized.repository());
-    let tags_ignore_txt = env.list_tags_remote(ignore_txt).await?;
-    assert_eq!(tags_ignore_txt, yellow.parse()?);
-    let tags_please_jpg = env.list_tags_remote(please_jpg).await?;
-    assert_eq!(tags_please_jpg, more_tags_please.parse()?);
-    let tags_err_pdf = env.list_tags_remote(err_pdf).await?;
+    let tags_ignore_txt = env.list_tags_remote(foo::IGNORE_TXT).await?;
+    assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
+    let tags_please_jpg = env.list_tags_remote(dummy::PLEASE_JPG).await?;
+    assert_eq!(tags_please_jpg, *tag::SPACE_TAG);
+    let tags_err_pdf = env.list_tags_remote(dummy::ERR_PDF).await?;
     assert!(tags_err_pdf.is_empty());
 
     Ok(())
@@ -183,28 +223,22 @@ async fn run_initial_sync_to_local() -> Result {
         .await
         .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
         .await;
-    let ignore_txt = "foo/ignore.txt";
-    let drat_pdf = "bar/baz/drat.pdf";
-    let err_pdf = "dummy/err.pdf";
-    let yellow = "yellow";
-    let red = "red";
-    env.tag_remote(ignore_txt, yellow).await?;
-    env.tag_remote(drat_pdf, red).await?;
+    env.tag_remote(foo::IGNORE_TXT, tag::YELLOW).await?;
+    env.tag_remote(bar::baz::DRAT_PDF, tag::RED).await?;
 
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
     insta::assert_yaml_snapshot!("run_initial_sync_to_local", initialized.repository());
-    let tags_ignore_txt = env.list_tags_local(ignore_txt)?;
-    assert_eq!(tags_ignore_txt, yellow.parse()?);
-    let tags_drat_pdf = env.list_tags_local(drat_pdf)?;
-    assert_eq!(tags_drat_pdf, red.parse()?);
-    let tags_err_pdf = env.list_tags_local(err_pdf)?;
+    let tags_ignore_txt = env.list_tags_local(foo::IGNORE_TXT)?;
+    assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
+    let tags_drat_pdf = env.list_tags_local(bar::baz::DRAT_PDF)?;
+    assert_eq!(tags_drat_pdf, *tag::RED_TAG);
+    let tags_err_pdf = env.list_tags_local(dummy::ERR_PDF)?;
     assert!(tags_err_pdf.is_empty());
 
     Ok(())
 }
+
 // sync with pre-existing tags on both sides
 // already synced -> detect diff
 // test directory tagged in nextcloud
-
-// TODO: use  test folder with pre-existing tags for run_initial_sync_to_remote and then implement more tests

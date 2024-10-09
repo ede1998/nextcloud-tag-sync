@@ -29,6 +29,14 @@ mod tag {
 
     pub const SPACE: &str = "more-tags please";
     pub static SPACE_TAG: LazyLock<Tags> = LazyLock::new(|| SPACE.parse().unwrap());
+
+    pub fn merged<const N: usize>(tags: [&Tags; N]) -> Tags {
+        let mut first = tags[0].clone();
+        for tag in &tags[1..] {
+            first.insert_all(tag);
+        }
+        first
+    }
 }
 
 #[allow(
@@ -148,6 +156,8 @@ impl TestEnv {
             .await
             .expect("Failed to recursively copy files");
 
+        tracing::info!("Copied local directory to temporary location {:?}", self.temp_dir);
+
         self.container
             .upload(path_to_str(mapping.remote()), mapping.local())
             .await
@@ -239,6 +249,51 @@ async fn run_initial_sync_to_local() -> Result {
     Ok(())
 }
 
-// sync with pre-existing tags on both sides
+#[test(tokio::test)]
+async fn run_initial_sync_bidirectional() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&*LOCAL_DIR, REMOTE_DIR)
+        .await;
+    env.tag_local(foo::IGNORE_TXT, tag::YELLOW)?;
+    env.tag_remote(foo::IGNORE_TXT, tag::YELLOW).await?;
+    env.tag_local(dummy::PLEASE_JPG, tag::SPACE)?;
+    env.tag_remote(bar::baz::DRAT_PDF, tag::RED).await?;
+    env.tag_local(bar::OK_PDF, tag::SPACE)?;
+    env.tag_remote(bar::OK_PDF, tag::RED).await?;
+
+    let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+
+    insta::assert_yaml_snapshot!("run_initial_sync_bidirectional", initialized.repository());
+    {
+        // check remote tags
+        let tags_ignore_txt = env.list_tags_remote(foo::IGNORE_TXT).await?;
+        assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
+        let tags_please_jpg = env.list_tags_remote(dummy::PLEASE_JPG).await?;
+        assert_eq!(tags_please_jpg, *tag::SPACE_TAG);
+        let tags_drat_pdf = env.list_tags_remote(bar::baz::DRAT_PDF).await?;
+        assert_eq!(tags_drat_pdf, *tag::RED_TAG);
+        let tags_ok_pdf = env.list_tags_remote(bar::OK_PDF).await?;
+        assert_eq!(tags_ok_pdf, tag::merged([&tag::SPACE_TAG, &tag::RED_TAG]));
+        let tags_err_pdf = env.list_tags_remote(dummy::ERR_PDF).await?;
+        assert!(tags_err_pdf.is_empty());
+    }
+    {
+        // check local tags
+        let tags_ignore_txt = env.list_tags_local(foo::IGNORE_TXT)?;
+        assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
+        let tags_please_jpg = env.list_tags_local(dummy::PLEASE_JPG)?;
+        assert_eq!(tags_please_jpg, *tag::SPACE_TAG);
+        let tags_drat_pdf = env.list_tags_local(bar::baz::DRAT_PDF)?;
+        assert_eq!(tags_drat_pdf, *tag::RED_TAG);
+        let tags_ok_pdf = env.list_tags_local(bar::OK_PDF)?;
+        assert_eq!(tags_ok_pdf, tag::merged([&tag::SPACE_TAG, &tag::RED_TAG]));
+        let tags_err_pdf = env.list_tags_local(dummy::ERR_PDF)?;
+        assert!(tags_err_pdf.is_empty());
+    }
+
+    Ok(())
+}
+
 // already synced -> detect diff
 // test directory tagged in nextcloud

@@ -186,14 +186,6 @@ impl Nextcloud {
         Ok(())
     }
 
-    pub async fn fetch_tags(&mut self) -> Result<TagMap> {
-        self.tags = self
-            .connection
-            .request(nextcloud_tag_sync::ListTags)
-            .await?;
-        Ok(self.tags.clone())
-    }
-
     pub async fn file_tags(&mut self, file_path: &str) -> Result<Tags> {
         let file_id = *self
             .files

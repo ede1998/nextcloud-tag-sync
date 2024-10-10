@@ -2,20 +2,22 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::fmt::Debug;
+use std::io::Write;
 use std::iter::Peekable;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use atomic_write_file::AtomicWriteFile;
 use serde::{Deserialize, Serialize};
-use snafu::{ensure, Snafu};
+use snafu::{ensure, IntoError, ResultExt, Snafu};
 use tracing::error;
 
 use crate::newtype;
 
 newtype!(PrefixMappingId, usize);
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SyncedPath {
     prefix_id: PrefixMappingId,
     path: PathBuf,
@@ -60,6 +62,56 @@ impl SyncedPath {
             prefix_id,
             path: path.to_owned(),
         }
+    }
+}
+
+impl Serialize for SyncedPath {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let Some(path) = self.path.to_str() else {
+            return Err(serde::ser::Error::custom(
+                "path contains invalid UTF-8 characters",
+            ));
+        };
+        let id = self.prefix_id.0;
+        serializer.serialize_str(&format!("{id}:{path}"))
+    }
+}
+
+impl<'de> Deserialize<'de> for SyncedPath {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = SyncedPath;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a path in the form '<ID>:/path/to/the/file' where ID is the prefix mapping number")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                let Some((prefix_id, path)) = v.split_once(':') else {
+                    return Err(serde::de::Error::custom("Missing ':' in SyncedPath"));
+                };
+
+                Ok(SyncedPath {
+                    prefix_id: prefix_id.parse().map_err(|_| {
+                        serde::de::Error::custom("Prefix mapping id was not a number")
+                    })?,
+                    path: path.into(),
+                })
+            }
+        }
+
+        deserializer.deserialize_str(Visitor)
     }
 }
 
@@ -381,6 +433,68 @@ impl Repository {
             keep_side_on_conflict,
         )
     }
+
+    /// Store the repository on disk in json format.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if serialization or write process fails.
+    pub fn persist_on_disk(&self, path: &Path) -> Result<(), PersistingError> {
+        tracing::info!("Persisting repository to disk at {}", path.display());
+        let result = serde_json::to_string_pretty(self).context(SerializationSnafu)?;
+        let mut file = AtomicWriteFile::open(path).with_context(|_| OpenSnafu { path })?;
+        file.write_all(result.as_ref())
+            .with_context(|_| WriteSnafu { path })?;
+        file.commit().with_context(|_| OpenSnafu { path })?;
+        Ok(())
+    }
+
+    /// Read the repository from disk in json format.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the read process or deserialization fails.
+    pub fn read_from_disk(path: &Path) -> Result<Self, LoadError> {
+        tracing::info!("Reading repository from disk at {}", path.display());
+        let data = std::fs::read_to_string(path).map_err(|e| match e.kind() {
+            std::io::ErrorKind::NotFound => NotFoundSnafu { path }.into_error(snafu::NoneError),
+            _ => IoSnafu { path }.into_error(e),
+        })?;
+        let repo = serde_json::from_str(&data).with_context(|_| DeserializationSnafu { path })?;
+        Ok(repo)
+    }
+}
+
+#[derive(Snafu, Debug)]
+pub enum LoadError {
+    #[snafu(display("failed to deserialize repository from json file {}", path.display()))]
+    Deserialization {
+        path: PathBuf,
+        source: serde_json::Error,
+    },
+    #[snafu(display("failed to read repository from file"))]
+    Io {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+    #[snafu(display("failed find file {} for reading", path.display()))]
+    NotFound { path: PathBuf },
+}
+
+#[derive(Snafu, Debug)]
+pub enum PersistingError {
+    #[snafu(display("failed to serialize repository as json"))]
+    Serialization { source: serde_json::Error },
+    #[snafu(display("failed to open file {}", path.display()))]
+    Open {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+    #[snafu(display("failed to write repository data to file {}", path.display()))]
+    Write {
+        path: PathBuf,
+        source: std::io::Error,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

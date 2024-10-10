@@ -3,8 +3,10 @@ use std::sync::Arc;
 use snafu::Snafu;
 
 use crate::{
-    resolve_diffs, tag_repository::Side, CommandsFormatter, Config, FileSystem, ListTagsError,
-    LocalError, LocalFs, RemoteFs, Repository,
+    resolve_diffs,
+    tag_repository::{LoadError, Side},
+    CommandsFormatter, Config, FileSystem, ListTagsError, LocalError, LocalFs, RemoteFs,
+    Repository,
 };
 
 pub struct Uninitialized {
@@ -48,9 +50,22 @@ impl Uninitialized {
         })
     }
 
-    const fn load_from_file(&self) -> Option<Initialized> {
-        // TODO? implement loading from cache file
-        None
+    #[expect(clippy::result_large_err, reason = "Only called once at startup")]
+    fn load_from_file(self) -> Result<Initialized, Self> {
+        match Repository::read_from_disk(std::path::Path::new(
+            &"/home/erik/dev/rust/nextcloud-tag-sync/test.toml",
+        )) {
+            Ok(repo) => Ok(Initialized {
+                repo,
+                local_fs: self.local_fs,
+                remote_fs: self.remote_fs,
+            }),
+            Err(LoadError::NotFound { .. }) => Err(self),
+            Err(e) => {
+                tracing::error!("Failed to load repository file: {e:?}");
+                Err(self)
+            }
+        }
     }
 
     /// Initialize a file tag repository by loading it from a cache file.
@@ -62,8 +77,8 @@ impl Uninitialized {
     /// This function will return an error if initialization fails.
     pub async fn initialize(self) -> Result<Initialized, InitError> {
         match self.load_from_file() {
-            Some(o) => Ok(o),
-            None => self.create_from_local_remote_diff().await,
+            Ok(o) => Ok(o),
+            Err(this) => this.create_from_local_remote_diff().await,
         }
     }
 }

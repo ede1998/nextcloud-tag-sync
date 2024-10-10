@@ -4,6 +4,7 @@
     xmlns:nc="http://nextcloud.org/ns">
     <d:prop>
         <oc:fileid />
+        <d:resourcetype />
     </d:prop>
     <oc:filter-rules>
         <oc:systemtag>{{ tag }}</oc:systemtag>

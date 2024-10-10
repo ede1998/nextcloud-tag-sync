@@ -8,6 +8,7 @@ use crate::{FileId, TagId};
 
 use super::{common::str_to_method, parse, Body, DeserializeError, Parse, Request};
 
+/// List all files with the given tag. Directories are ignored.
 #[derive(Template)]
 #[template(path = "list_files_with_tag.xml")]
 pub struct ListFilesWithTag {
@@ -50,6 +51,7 @@ impl Parse for ListFilesWithTag {
         Ok(element
             .response
             .into_iter()
+            .filter(|r| r.resource_type.collection.is_none())
             .map(|r| (r.file_id, r.href))
             .collect())
     }
@@ -67,6 +69,13 @@ struct Response {
     href: String,
     #[query(".propstat.prop.fileid")]
     file_id: FileId,
+    #[query(".propstat.prop.resourcetype")]
+    resource_type: ResourceType,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct ResourceType {
+    collection: Option<String>,
 }
 
 #[cfg(test)]

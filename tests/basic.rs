@@ -306,5 +306,21 @@ async fn run_initial_sync_bidirectional() -> Result {
     Ok(())
 }
 
+#[test(tokio::test)]
+async fn ignore_tagged_directory() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
+        .await;
+    env.tag_remote(foo::DIR, tag::YELLOW).await?;
+    env.tag_remote(foo::IGNORE_TXT, tag::YELLOW).await?;
+
+    let _ = Uninitialized::new(env.arc_config()).initialize().await?;
+
+    let tags_foo = env.list_tags_local(foo::DIR)?;
+    assert!(tags_foo.is_empty());
+
+    Ok(())
+}
+
 // already synced -> detect diff
-// test directory tagged in nextcloud

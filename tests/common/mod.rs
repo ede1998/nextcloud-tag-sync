@@ -96,12 +96,12 @@ impl Nextcloud {
         for entry in directories {
             let entry = entry?;
             let path = entry.path().strip_prefix(source)?;
-            self.connection
-                .request(CreateDirectory::new(format!(
-                    "{nc_base_folder}/{}",
-                    path.display()
-                )))
+            let full_path = format!("{nc_base_folder}/{}", path.display());
+            let file_id = self
+                .connection
+                .request(CreateDirectory::new(&full_path))
                 .await?;
+            self.files.insert(file_id, full_path);
         }
 
         // Now upload all files

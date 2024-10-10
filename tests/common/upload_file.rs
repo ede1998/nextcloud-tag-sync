@@ -42,24 +42,28 @@ impl Parse for UploadFile {
     type Error = ParseFileTagError;
 
     fn parse(h: &HeaderMap, _: &str) -> Result<Self::Output, Self::Error> {
-        let header_value = h.get("oc-fileid").context(MissingFileIdHeaderSnafu)?;
-        let global_id = std::str::from_utf8(header_value.as_bytes())
-            .with_context(|_| NonUtf8FileIdSnafu { header_value })?;
-
-        let file_id = global_id
-            .split_once(|c: char| !c.is_numeric())
-            .map_or(global_id, |g| g.0);
-
-        file_id.parse().with_context(|_| FileIdParseSnafu {
-            header_value,
-            file_id,
-        })
+        extract_file_id(h)
     }
+}
+
+pub fn extract_file_id(h: &HeaderMap) -> Result<FileId, ParseFileTagError> {
+    let header_value = h.get("oc-fileid").context(MissingFileIdHeaderSnafu)?;
+    let global_id = std::str::from_utf8(header_value.as_bytes())
+        .with_context(|_| NonUtf8FileIdSnafu { header_value })?;
+
+    let file_id = global_id
+        .split_once(|c: char| !c.is_numeric())
+        .map_or(global_id, |g| g.0);
+
+    file_id.parse().with_context(|_| FileIdParseSnafu {
+        header_value,
+        file_id,
+    })
 }
 
 #[derive(Debug, Snafu)]
 pub enum ParseFileTagError {
-    #[snafu(display("Header 'oc-fileid' was missing from response"))]
+    #[snafu(display("Header 'oc-fileid' was missing from response",))]
     MissingFileIdHeader,
     #[snafu(display(
         "Failed to parse file id {file_id} because of non-numeric symbols: {source}"

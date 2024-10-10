@@ -2,10 +2,24 @@
 <d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns">
  <d:response>
   <d:status>HTTP/1.1 200 OK</d:status>
+  <d:href>/remote.php/dav/files/erik/Pictures/2022</d:href>
+  <d:propstat>
+   <d:prop>
+    <oc:fileid>9999999</oc:fileid>
+    <d:resourcetype>
+      <d:collection/>
+    </d:resourcetype>
+   </d:prop>
+   <d:status>HTTP/1.1 200 OK</d:status>
+  </d:propstat>
+ </d:response>
+ <d:response>
+  <d:status>HTTP/1.1 200 OK</d:status>
   <d:href>/remote.php/dav/files/erik/Pictures/2022/2022-07-16T17-15-28.jpg</d:href>
   <d:propstat>
    <d:prop>
     <oc:fileid>1220518</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -16,6 +30,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1220539</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -26,6 +41,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1226146</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -36,6 +52,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1231909</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -46,6 +63,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233013</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -56,6 +74,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233016</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -66,6 +85,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233229</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -76,6 +96,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233235</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -86,6 +107,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233247</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -96,6 +118,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233253</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -106,6 +129,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233259</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -116,6 +140,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233262</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -126,6 +151,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233271</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -136,6 +162,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233694</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -146,6 +173,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233769</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -156,6 +184,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233793</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -166,6 +195,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>1233808</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -176,6 +206,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>168757</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -186,6 +217,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>169393</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -196,6 +228,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>206269</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -206,6 +239,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>208045</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -216,6 +250,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>208675</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -226,6 +261,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>209119</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -236,6 +272,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>209236</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -246,6 +283,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>209296</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -256,6 +294,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>209644</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -266,6 +305,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>210286</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -276,6 +316,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>214447</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -286,6 +327,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>214723</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -296,6 +338,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>215128</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -306,6 +349,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>215845</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -316,6 +360,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34934</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -326,6 +371,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34937</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -336,6 +382,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34940</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -346,6 +393,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34943</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -356,6 +404,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34946</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -366,6 +415,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34949</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -376,6 +426,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34955</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -386,6 +437,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34958</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -396,6 +448,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34961</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -406,6 +459,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34964</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -416,6 +470,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34967</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -426,6 +481,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34970</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -436,6 +492,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34973</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -446,6 +503,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34976</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -456,6 +514,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34991</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -466,6 +525,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>34994</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -476,6 +536,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>35003</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -486,6 +547,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>35006</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -496,6 +558,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>35009</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -506,6 +569,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>36839</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -516,6 +580,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42509</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -526,6 +591,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42512</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -536,6 +602,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42515</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -546,6 +613,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42518</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -556,6 +624,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42524</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -566,6 +635,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42527</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -576,6 +646,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42530</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -586,6 +657,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42533</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -596,6 +668,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42536</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -606,6 +679,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42539</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -616,6 +690,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42551</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -626,6 +701,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42554</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -636,6 +712,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42557</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -646,6 +723,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42566</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -656,6 +734,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42569</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -666,6 +745,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42596</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -676,6 +756,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42602</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -686,6 +767,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42605</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -696,6 +778,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42608</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -706,6 +789,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42611</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -716,6 +800,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42614</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -726,6 +811,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42626</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -736,6 +822,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42632</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -746,6 +833,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42638</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -756,6 +844,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42641</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -766,6 +855,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42653</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -776,6 +866,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42659</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -786,6 +877,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42665</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -796,6 +888,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42668</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -806,6 +899,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42695</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -816,6 +910,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42701</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -826,6 +921,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42704</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -836,6 +932,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42710</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -846,6 +943,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42713</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -856,6 +954,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42716</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -866,6 +965,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42725</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -876,6 +976,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42731</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -886,6 +987,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42740</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -896,6 +998,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>42743</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -906,6 +1009,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>43226</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -916,6 +1020,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>45479</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -926,6 +1031,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>45482</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -936,6 +1042,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>45491</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -946,6 +1053,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>55475</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -956,6 +1064,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58535</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -966,6 +1075,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58958</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -976,6 +1086,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58964</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -986,6 +1097,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58970</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -996,6 +1108,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58973</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -1006,6 +1119,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58976</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -1016,6 +1130,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58979</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -1026,6 +1141,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58982</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -1036,6 +1152,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58985</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>
@@ -1046,6 +1163,7 @@
   <d:propstat>
    <d:prop>
     <oc:fileid>58988</oc:fileid>
+    <d:resourcetype/>
    </d:prop>
    <d:status>HTTP/1.1 200 OK</d:status>
   </d:propstat>

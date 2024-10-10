@@ -1,7 +1,9 @@
-use std::{borrow::Cow, convert::Infallible};
+use std::borrow::Cow;
 
-use nextcloud_tag_sync::{Parse, Request};
+use nextcloud_tag_sync::{FileId, Parse, Request};
 use reqwest::header::HeaderMap;
+
+use super::upload_file::ParseFileTagError;
 
 pub struct CreateDirectory {
     path: String,
@@ -29,12 +31,10 @@ impl Request for CreateDirectory {
 }
 
 impl Parse for CreateDirectory {
-    type Output = ();
-    type Error = Infallible;
+    type Output = FileId;
+    type Error = ParseFileTagError;
 
-    fn parse(_: &HeaderMap, _: &str) -> Result<Self::Output, Self::Error> {
-        // We don't expect anything here and if we get sth because
-        // of an error (4XX/5XX), it's already handled prior.
-        Ok(())
+    fn parse(h: &HeaderMap, _: &str) -> Result<Self::Output, Self::Error> {
+        super::upload_file::extract_file_id(h)
     }
 }

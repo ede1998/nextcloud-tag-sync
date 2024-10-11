@@ -1,0 +1,28 @@
+---
+source: tests/basic.rs
+assertion_line: 211
+expression: db
+---
+{
+  "prefixes": [
+    {
+      "local": "/tmp/path/to/local/files/tests/data_basic",
+      "remote": "/remote.php/dav/files/tester/test_folder"
+    }
+  ],
+  "files": {
+    "0:bar/baz/drat.pdf": [
+      "red"
+    ],
+    "0:bar/ok.pdf": [
+      "more-tags please",
+      "red"
+    ],
+    "0:dummy/please.jpg": [
+      "more-tags please"
+    ],
+    "0:foo/ignore.txt": [
+      "yellow"
+    ]
+  }
+}

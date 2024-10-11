@@ -36,9 +36,9 @@ impl Uninitialized {
             resolve_diffs(&mut diff_events, self.config.keep_side_on_conflict);
 
         let cmd_fmt = CommandsFormatter(&local_actions);
-        println!("{cmd_fmt}");
+        tracing::debug!("Local actions: {cmd_fmt}");
         let cmd_fmt = CommandsFormatter(&remote_actions);
-        println!("{cmd_fmt}");
+        tracing::debug!("Remote actions: {cmd_fmt}");
 
         self.remote_fs.update_tags(remote_actions).await;
         self.local_fs.update_tags(local_actions).await;
@@ -117,7 +117,7 @@ impl Initialized {
         let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
 
         let cmd_fmt = CommandsFormatter(&actions);
-        println!("{cmd_fmt}");
+        tracing::debug!("Remote actions: {cmd_fmt}");
 
         self.remote_fs.update_tags(actions).await;
         self.repo = diff_events.finish();
@@ -137,7 +137,7 @@ impl Initialized {
         let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
 
         let cmd_fmt = CommandsFormatter(&actions);
-        println!("{cmd_fmt}");
+        tracing::debug!("Local actions: {cmd_fmt}");
 
         self.local_fs.update_tags(actions).await;
 

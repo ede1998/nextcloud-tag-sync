@@ -9,7 +9,9 @@ use test_log::test;
 
 use common::{Nextcloud, Result};
 use data_basic::*;
-use nextcloud_tag_sync::{Config, PrefixMapping, Repository, Side, Tags, Uninitialized};
+use nextcloud_tag_sync::{
+    Config, FileLocation, PrefixMapping, Repository, Side, Tags, Uninitialized,
+};
 use url::Url;
 use walkdir::WalkDir;
 
@@ -30,12 +32,12 @@ mod tag {
     pub const SPACE: &str = "more-tags please";
     pub static SPACE_TAG: LazyLock<Tags> = LazyLock::new(|| SPACE.parse().unwrap());
 
-    pub fn merged<const N: usize>(tags: [&Tags; N]) -> Tags {
-        let mut first = tags[0].clone();
+    pub fn merged<const N: usize>(tags: [&Tags; N]) -> Option<Tags> {
+        let mut first = (*tags.first()?).clone();
         for tag in &tags[1..] {
             first.insert_all(tag);
         }
-        first
+        Some(first)
     }
 }
 
@@ -96,6 +98,12 @@ impl TestEnv {
         }
     }
 
+    pub async fn tag_both(&mut self, file: &str, new_tag: &str) -> Result {
+        self.tag_local(file, new_tag)?;
+        self.tag_remote(file, new_tag).await?;
+        Ok(())
+    }
+
     pub fn tag_local(&self, file: impl AsRef<Path>, new_tag: &str) -> Result {
         let file = self.local_dir(0).join(file.as_ref());
         let new_tag = new_tag.parse()?;
@@ -110,10 +118,31 @@ impl TestEnv {
         Ok(())
     }
 
+    pub fn untag_local(&self, file: impl AsRef<Path>, tag: &str) -> Result {
+        let file = self.local_dir(0).join(file.as_ref());
+        let tag = tag.parse()?;
+        let tag_property = self.config().local_tag_property_name;
+
+        let tags = xattr::get(&file, &tag_property)?.unwrap_or_default();
+        let mut tags: Tags = String::from_utf8(tags)?.parse()?;
+
+        tags.remove_one(&tag);
+        let stringified_tags = tags.to_string();
+        xattr::set(&file, &tag_property, stringified_tags.as_bytes())?;
+        Ok(())
+    }
+
     pub async fn tag_remote(&mut self, file: &str, new_tag: &str) -> Result {
         let file = format!("{}/{file}", self.remote_dir(0));
         let new_tag = new_tag.parse()?;
         self.container.tag(&file, &new_tag).await?;
+        Ok(())
+    }
+
+    pub async fn untag_remote(&mut self, file: &str, tag: &str) -> Result {
+        let file = format!("{}/{file}", self.remote_dir(0));
+        let tag = tag.parse()?;
+        self.container.untag(&file, &tag).await?;
         Ok(())
     }
 
@@ -168,6 +197,15 @@ impl TestEnv {
         self
     }
 
+    pub fn with_db(self, db_json: &str) -> Result<Self> {
+        let db = db_json.replace(
+            "/tmp/path/to/local/files",
+            &self.temp_dir.path().to_string_lossy(),
+        );
+        std::fs::write(self.config().tag_database, db)?;
+        Ok(self)
+    }
+
     pub fn local_dir(&self, index: usize) -> &Path {
         self.prefixes[index].local()
     }
@@ -184,6 +222,7 @@ impl TestEnv {
             user: self.user.clone(),
             token: self.token.clone(),
             max_concurrent_requests: 100,
+            tag_database: self.temp_dir.path().join("db.json"),
             ..Default::default()
         }
     }
@@ -196,6 +235,41 @@ impl TestEnv {
         insta::assert_yaml_snapshot!(name, repo, {
             ".prefixes[].local" => "/tmp/path/to/local/files"
         });
+    }
+
+    pub fn assert_db_snapshot(&self, name: &'static str) {
+        let temp_dir = self
+            .temp_dir
+            .path()
+            .to_str()
+            .expect("non-UTF8 temporary path");
+        let db = std::fs::read_to_string(&self.config().tag_database)
+            .expect("failed to read tag database")
+            .replace(temp_dir, "/tmp/path/to/local/files");
+        insta::assert_snapshot!(name, db);
+    }
+
+    pub async fn assert_tags(
+        &mut self,
+        check_location: FileLocation,
+        expected: &[(&str, Option<Tags>)],
+    ) -> Result {
+        for (file, expected_tags) in expected {
+            let actual_tags = match check_location {
+                FileLocation::Local => self.list_tags_local(file)?,
+                FileLocation::Remote => self.list_tags_remote(file).await?,
+            };
+
+            let location = match check_location {
+                FileLocation::Local => "local",
+                FileLocation::Remote => "remote",
+            };
+            match expected_tags {
+                Some(expected_tags) => assert_eq!(&actual_tags, expected_tags, "Wrong tags on {location} file {file}"),
+                None => assert!(actual_tags.is_empty(), "Unexpectedly found tags on {location} file {file}"),
+            }
+        }
+        Ok(())
     }
 }
 
@@ -228,12 +302,12 @@ async fn run_initial_sync_to_remote() -> Result {
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
     env.assert_snapshot("run_initial_sync_to_remote", initialized.repository());
-    let tags_ignore_txt = env.list_tags_remote(foo::IGNORE_TXT).await?;
-    assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
-    let tags_please_jpg = env.list_tags_remote(dummy::PLEASE_JPG).await?;
-    assert_eq!(tags_please_jpg, *tag::SPACE_TAG);
-    let tags_err_pdf = env.list_tags_remote(dummy::ERR_PDF).await?;
-    assert!(tags_err_pdf.is_empty());
+    let expected = [
+        (foo::IGNORE_TXT, Some(tag::YELLOW_TAG.clone())),
+        (dummy::PLEASE_JPG, Some(tag::SPACE_TAG.clone())),
+        (dummy::ERR_PDF, None),
+    ];
+    env.assert_tags(FileLocation::Remote, &expected).await?;
 
     Ok(())
 }
@@ -250,12 +324,12 @@ async fn run_initial_sync_to_local() -> Result {
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
     env.assert_snapshot("run_initial_sync_to_local", initialized.repository());
-    let tags_ignore_txt = env.list_tags_local(foo::IGNORE_TXT)?;
-    assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
-    let tags_drat_pdf = env.list_tags_local(bar::baz::DRAT_PDF)?;
-    assert_eq!(tags_drat_pdf, *tag::RED_TAG);
-    let tags_err_pdf = env.list_tags_local(dummy::ERR_PDF)?;
-    assert!(tags_err_pdf.is_empty());
+    let expected = [
+        (foo::IGNORE_TXT, Some(tag::YELLOW_TAG.clone())),
+        (bar::baz::DRAT_PDF, Some(tag::RED_TAG.clone())),
+        (dummy::ERR_PDF, None),
+    ];
+    env.assert_tags(FileLocation::Local, &expected).await?;
 
     Ok(())
 }
@@ -266,8 +340,7 @@ async fn run_initial_sync_bidirectional() -> Result {
         .await
         .with_prefix(&LOCAL_DIR, REMOTE_DIR)
         .await;
-    env.tag_local(foo::IGNORE_TXT, tag::YELLOW)?;
-    env.tag_remote(foo::IGNORE_TXT, tag::YELLOW).await?;
+    env.tag_both(foo::IGNORE_TXT, tag::YELLOW).await?;
     env.tag_local(dummy::PLEASE_JPG, tag::SPACE)?;
     env.tag_remote(bar::baz::DRAT_PDF, tag::RED).await?;
     env.tag_local(bar::OK_PDF, tag::SPACE)?;
@@ -276,32 +349,19 @@ async fn run_initial_sync_bidirectional() -> Result {
     let initialized = Uninitialized::new(env.arc_config()).initialize().await?;
 
     env.assert_snapshot("run_initial_sync_bidirectional", initialized.repository());
-    {
-        // check remote tags
-        let tags_ignore_txt = env.list_tags_remote(foo::IGNORE_TXT).await?;
-        assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
-        let tags_please_jpg = env.list_tags_remote(dummy::PLEASE_JPG).await?;
-        assert_eq!(tags_please_jpg, *tag::SPACE_TAG);
-        let tags_drat_pdf = env.list_tags_remote(bar::baz::DRAT_PDF).await?;
-        assert_eq!(tags_drat_pdf, *tag::RED_TAG);
-        let tags_ok_pdf = env.list_tags_remote(bar::OK_PDF).await?;
-        assert_eq!(tags_ok_pdf, tag::merged([&tag::SPACE_TAG, &tag::RED_TAG]));
-        let tags_err_pdf = env.list_tags_remote(dummy::ERR_PDF).await?;
-        assert!(tags_err_pdf.is_empty());
-    }
-    {
-        // check local tags
-        let tags_ignore_txt = env.list_tags_local(foo::IGNORE_TXT)?;
-        assert_eq!(tags_ignore_txt, *tag::YELLOW_TAG);
-        let tags_please_jpg = env.list_tags_local(dummy::PLEASE_JPG)?;
-        assert_eq!(tags_please_jpg, *tag::SPACE_TAG);
-        let tags_drat_pdf = env.list_tags_local(bar::baz::DRAT_PDF)?;
-        assert_eq!(tags_drat_pdf, *tag::RED_TAG);
-        let tags_ok_pdf = env.list_tags_local(bar::OK_PDF)?;
-        assert_eq!(tags_ok_pdf, tag::merged([&tag::SPACE_TAG, &tag::RED_TAG]));
-        let tags_err_pdf = env.list_tags_local(dummy::ERR_PDF)?;
-        assert!(tags_err_pdf.is_empty());
-    }
+    let expected = [
+        (foo::IGNORE_TXT, Some(tag::YELLOW_TAG.clone())),
+        (dummy::PLEASE_JPG, Some(tag::SPACE_TAG.clone())),
+        (bar::baz::DRAT_PDF, Some(tag::RED_TAG.clone())),
+        (bar::OK_PDF, tag::merged([&tag::SPACE_TAG, &tag::RED_TAG])),
+        (dummy::ERR_PDF, None),
+    ];
+    env.assert_tags(FileLocation::Remote, &expected).await?;
+    env.assert_tags(FileLocation::Local, &expected).await?;
+
+    initialized.persist_repository()?;
+
+    env.assert_db_snapshot("run_initial_sync_bidirectional_db.json");
 
     Ok(())
 }
@@ -323,4 +383,72 @@ async fn ignore_tagged_directory() -> Result {
     Ok(())
 }
 
-// already synced -> detect diff
+#[test(tokio::test)]
+async fn run_follow_up_sync_bidirectional() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
+        .await
+        .with_db(
+            r#"
+            {
+              "prefixes": [
+                {
+                  "local": "/tmp/path/to/local/files/tests/data_basic",
+                  "remote": "/remote.php/dav/files/tester/test_folder"
+                }
+              ],
+              "files": {
+                "0:bar/baz/drat.pdf": [
+                  "red"
+                ],
+                "0:bar/ok.pdf": [
+                  "more-tags please",
+                  "red"
+                ],
+                "0:dummy/please.jpg": [
+                  "more-tags please"
+                ],
+                "0:foo/ignore.txt": [
+                  "yellow"
+                ]
+              }
+            }"#,
+        )?;
+
+    env.tag_both(foo::IGNORE_TXT, tag::YELLOW).await?;
+    env.tag_both(dummy::PLEASE_JPG, tag::SPACE).await?;
+    env.tag_both(bar::baz::DRAT_PDF, tag::RED).await?;
+    env.tag_both(bar::OK_PDF, tag::SPACE).await?;
+    env.tag_both(bar::OK_PDF, tag::RED).await?;
+
+    env.tag_local(foo::IGNORE_TXT, tag::RED)?;
+    env.tag_remote(dummy::PLEASE_JPG, tag::YELLOW).await?;
+    env.untag_local(bar::OK_PDF, tag::RED)?;
+    env.untag_remote(bar::OK_PDF, tag::SPACE).await?;
+    env.untag_local(bar::baz::DRAT_PDF, tag::RED)?;
+    env.untag_remote(bar::baz::DRAT_PDF, tag::RED).await?;
+
+    let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+    initialized.sync_local_to_remote().await?;
+    initialized.sync_remote_to_local().await?;
+
+    env.assert_snapshot("run_followup_sync_bidirectional", initialized.repository());
+    let expected = [
+        (
+            foo::IGNORE_TXT,
+            tag::merged([&tag::YELLOW_TAG, &tag::RED_TAG]),
+        ),
+        (
+            dummy::PLEASE_JPG,
+            tag::merged([&tag::SPACE_TAG, &tag::YELLOW_TAG]),
+        ),
+        (bar::baz::DRAT_PDF, None),
+        (bar::OK_PDF, None),
+        (dummy::ERR_PDF, None),
+    ];
+    env.assert_tags(FileLocation::Remote, &expected).await?;
+    env.assert_tags(FileLocation::Local, &expected).await?;
+
+    Ok(())
+}

@@ -56,6 +56,17 @@ impl RemoteFs {
         self.tags.extend(new_tags);
     }
 
+    async fn load_tags(&mut self, connection: &Connection) -> Result<(), ListTagsError> {
+        let tag_map = connection
+            .request(crate::ListTags)
+            .await
+            .context(ListTagsSnafu)?;
+        debug!("Received mapping of {} tags", tag_map.len());
+        self.tags.extend(tag_map);
+
+        Ok(())
+    }
+
     fn get_unknown_tags<I>(&self, commands: I) -> HashSet<Tag>
     where
         I: IntoIterator<Item = Command>,
@@ -164,15 +175,9 @@ impl RemoteFs {
 
 impl FileSystem for RemoteFs {
     async fn create_repo(&mut self) -> Result<crate::Repository, crate::InitError> {
-        use crate::{ListFilesWithTag, ListTags, Repository};
+        use crate::{ListFilesWithTag, Repository};
         let connection = &Connection::from_config(&self.config);
-        let tag_map = connection
-            .request(ListTags)
-            .await
-            .context(ListTagsSnafu)
-            .context(RemoteSnafu)?;
-        debug!("Received mapping of {} tags", tag_map.len());
-        self.tags.extend(tag_map);
+        self.load_tags(connection).await.context(RemoteSnafu)?;
         let file_tag_helper =
             LimitedConcurrency::new(&self.tags, self.config.max_concurrent_requests)
                 .transform(|(id, tag)| async move {
@@ -210,6 +215,9 @@ impl FileSystem for RemoteFs {
     {
         let connection = Connection::from_config(&self.config);
         let commands: Vec<_> = commands.into_iter().collect();
+        if let Err(e) = self.load_tags(&connection).await {
+            tracing::warn!("Failed to load existing tags from Nextcloud: {e}");
+        }
         self.create_missing_tags(commands.clone(), &connection)
             .await;
 

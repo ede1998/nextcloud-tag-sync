@@ -34,9 +34,8 @@ async fn main() -> Result<(), Whatever> {
         .await
         .whatever_context("failed to sync remote to local")?;
     initialized
-        .repository()
-        .persist_on_disk(std::path::Path::new(&"/home/erik/dev/rust/nextcloud-tag-sync/test.toml"))
-        .whatever_context("failed to persist repo")?;
+        .persist_repository()
+        .whatever_context("failed to persist repository")?;
 
     Ok(())
 }

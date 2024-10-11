@@ -4,7 +4,7 @@ use snafu::Snafu;
 
 use crate::{
     resolve_diffs,
-    tag_repository::{LoadError, Side},
+    tag_repository::{LoadError, PersistingError, Side},
     CommandsFormatter, Config, FileSystem, ListTagsError, LocalError, LocalFs, RemoteFs,
     Repository,
 };
@@ -47,18 +47,18 @@ impl Uninitialized {
             repo: diff_events.finish(),
             remote_fs: self.remote_fs,
             local_fs: self.local_fs,
+            config: self.config,
         })
     }
 
     #[expect(clippy::result_large_err, reason = "Only called once at startup")]
     fn load_from_file(self) -> Result<Initialized, Self> {
-        match Repository::read_from_disk(std::path::Path::new(
-            &"/home/erik/dev/rust/nextcloud-tag-sync/test.toml",
-        )) {
+        match Repository::read_from_disk(&self.config.tag_database) {
             Ok(repo) => Ok(Initialized {
                 repo,
                 local_fs: self.local_fs,
                 remote_fs: self.remote_fs,
+                config: self.config,
             }),
             Err(LoadError::NotFound { .. }) => Err(self),
             Err(e) => {
@@ -85,6 +85,7 @@ impl Uninitialized {
 
 #[derive(Debug)]
 pub struct Initialized {
+    config: Arc<Config>,
     repo: Repository,
     remote_fs: RemoteFs,
     local_fs: LocalFs,
@@ -135,6 +136,15 @@ impl Initialized {
 
         self.repo = diff_events.finish();
         Ok(())
+    }
+
+    /// Persist the repository to disk.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if persisting failed.
+    pub fn persist_repository(&self) -> Result<(), PersistingError> {
+        self.repo.persist_on_disk(&self.config.tag_database)
     }
 }
 

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
@@ -16,6 +18,7 @@ pub struct Config {
     pub user: String,
     pub token: String,
     pub local_tag_property_name: String,
+    pub tag_database: std::path::PathBuf,
 }
 
 impl std::fmt::Debug for Config {
@@ -28,6 +31,7 @@ impl std::fmt::Debug for Config {
             .field("user", &self.user)
             .field("token", &"EXPUNGED")
             .field("local_tag_property_name", &self.local_tag_property_name)
+            .field("tag_database", &self.tag_database)
             .finish()
     }
 }
@@ -45,6 +49,7 @@ impl std::fmt::Display for Config {
             "Keep these tags if tags mismatch: {:?}",
             self.keep_side_on_conflict
         )?;
+        writeln!(f, "Tag database: {}", self.tag_database.display())?;
         writeln!(f, "Nextcloud instance: {}", self.nextcloud_instance)?;
         writeln!(f, "Nextcloud user: {}", self.user)?;
         writeln!(
@@ -74,6 +79,7 @@ impl Default for Config {
             user: "missing_username".to_owned(),
             token: "missing_token".to_owned(),
             local_tag_property_name: "user.xdg.tags".to_owned(),
+            tag_database: PathBuf::from("nextcloud-tag-sync.db.json"),
         }
     }
 }
@@ -87,6 +93,6 @@ impl Default for Config {
 pub fn load_config() -> Result<Config, figment::Error> {
     Figment::from(Serialized::defaults(Config::default()))
         .merge(Toml::file("config.toml"))
-        .merge(Env::prefixed("APP_"))
+        .merge(Env::prefixed("NCTS_"))
         .extract()
 }

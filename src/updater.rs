@@ -54,13 +54,20 @@ impl Uninitialized {
     #[expect(clippy::result_large_err, reason = "Only called once at startup")]
     fn load_from_file(self) -> Result<Initialized, Self> {
         match Repository::read_from_disk(&self.config.tag_database) {
-            Ok(repo) => Ok(Initialized {
+            Ok(repo) if repo.validate_prefix_mapping(&self.config.prefixes) => Ok(Initialized {
                 repo,
                 local_fs: self.local_fs,
                 remote_fs: self.remote_fs,
                 config: self.config,
             }),
-            Err(LoadError::NotFound { .. }) => Err(self),
+            Err(LoadError::NotFound { .. }) => {
+                tracing::info!("No previous repository exists yet. Starting from scratch.");
+                Err(self)
+            }
+            Ok(_) => {
+                tracing::error!("Repository created for incompatible prefix mapping configuration. Ignoring it.");
+                Err(self)
+            }
             Err(e) => {
                 tracing::error!("Failed to load repository file: {e:?}");
                 Err(self)

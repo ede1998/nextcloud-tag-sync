@@ -382,6 +382,17 @@ impl Repository {
         }
     }
 
+    #[must_use]
+    pub fn validate_prefix_mapping(&self, expected: &[PrefixMapping]) -> bool {
+        let prefix_count = self.prefixes.len();
+
+        if prefix_count > expected.len() {
+            return false;
+        }
+
+        self.prefixes == expected[..prefix_count]
+    }
+
     fn split_prefix<'a>(
         &self,
         file: &'a Path,

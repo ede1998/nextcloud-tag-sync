@@ -68,10 +68,7 @@ fn run_command(
 ) -> Result<(), FileError> {
     let path = cmd.path.local_file(prefixes);
 
-    let mut tags = match get_tags_of_file(&path, tag_property_name) {
-        Ok(ok) => ok,
-        Err(err) => return Err(err),
-    };
+    let mut tags = get_tags_of_file(&path, tag_property_name)?;
 
     for TagAction { tag, modification } in cmd.actions {
         match modification {

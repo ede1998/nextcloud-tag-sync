@@ -110,18 +110,18 @@ where
     }
 }
 
-impl<'a, T> Item<'a, T>
+impl<T> Item<'_, T>
 where
     T: Display,
 {
     fn set_extras(&mut self, data: T) {
-        if let Self::String { ref mut extras, .. } = self {
+        if let Self::String { extras, .. } = self {
             *extras = data;
         }
     }
 }
 
-impl<'a, T> PartialEq for Item<'a, T>
+impl<T> PartialEq for Item<'_, T>
 where
     T: Display,
 {
@@ -136,7 +136,7 @@ where
     }
 }
 
-impl<'a, T> PartialOrd for Item<'a, T>
+impl<T> PartialOrd for Item<'_, T>
 where
     T: Display,
 {
@@ -149,7 +149,7 @@ where
     }
 }
 
-impl<'a, T> Display for Item<'a, T>
+impl<T> Display for Item<'_, T>
 where
     T: Display,
 {
@@ -165,7 +165,7 @@ pub struct SyncedPathPrinter<'a, T: Display> {
     tree: Tree<Item<'a, T>>,
 }
 
-impl<'a, T> Display for SyncedPathPrinter<'a, T>
+impl<T> Display for SyncedPathPrinter<'_, T>
 where
     T: Display,
 {

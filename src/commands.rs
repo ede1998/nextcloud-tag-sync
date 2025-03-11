@@ -110,7 +110,7 @@ fn push_some<T>(vec: &mut Vec<T>, item: Option<T>) {
 
 pub struct CommandsFormatter<'a>(pub &'a [Command]);
 
-impl<'a> std::fmt::Display for CommandsFormatter<'a> {
+impl std::fmt::Display for CommandsFormatter<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.0.is_empty() {
             return Ok(());
@@ -129,7 +129,7 @@ impl<'a> std::fmt::Display for CommandsFormatter<'a> {
 #[derive(Default)]
 struct ActionsFormatter<'a>(&'a [TagAction]);
 
-impl<'a> std::fmt::Display for ActionsFormatter<'a> {
+impl std::fmt::Display for ActionsFormatter<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.0.is_empty() {
             return Ok(());

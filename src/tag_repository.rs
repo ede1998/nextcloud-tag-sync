@@ -87,7 +87,7 @@ impl<'de> Deserialize<'de> for SyncedPath {
     {
         struct Visitor;
 
-        impl<'de> serde::de::Visitor<'de> for Visitor {
+        impl serde::de::Visitor<'_> for Visitor {
             type Value = SyncedPath;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -140,7 +140,7 @@ pub enum TagParseError {
 
 struct CharacterPrintHelper<'a>(&'a [(usize, char)]);
 
-impl<'a> std::fmt::Display for CharacterPrintHelper<'a> {
+impl std::fmt::Display for CharacterPrintHelper<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut next = self.0.iter().peekable();
         while let Some((position, character)) = next.next() {

@@ -33,11 +33,12 @@ mod tag {
     pub static SPACE_TAG: LazyLock<Tags> = LazyLock::new(|| SPACE.parse().unwrap());
 
     pub fn merged<const N: usize>(tags: [&Tags; N]) -> Option<Tags> {
-        let mut first = (*tags.first()?).clone();
-        for tag in &tags[1..] {
-            first.insert_all(tag);
-        }
-        Some(first)
+        tags.into_iter()
+            .cloned()
+            .reduce(|mut all_tags, current_tags| {
+                all_tags.insert_all(current_tags.clone());
+                all_tags
+            })
     }
 }
 
@@ -265,8 +266,14 @@ impl TestEnv {
                 FileLocation::Remote => "remote",
             };
             match expected_tags {
-                Some(expected_tags) => assert_eq!(&actual_tags, expected_tags, "Wrong tags on {location} file {file}"),
-                None => assert!(actual_tags.is_empty(), "Unexpectedly found tags on {location} file {file}"),
+                Some(expected_tags) => assert_eq!(
+                    &actual_tags, expected_tags,
+                    "Wrong tags on {location} file {file}"
+                ),
+                None => assert!(
+                    actual_tags.is_empty(),
+                    "Unexpectedly found tags on {location} file {file}"
+                ),
             }
         }
         Ok(())

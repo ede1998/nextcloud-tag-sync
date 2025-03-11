@@ -254,7 +254,7 @@ impl FileTagHelper {
         for (id, file) in files {
             self.file_ids.insert(id, file.clone());
             match self.file_tags.entry(file) {
-                Entry::Occupied(mut entry) => entry.get_mut().insert_all(&tag),
+                Entry::Occupied(mut entry) => entry.get_mut().insert_all(tag.clone()),
                 Entry::Vacant(entry) => {
                     entry.insert(tag.clone());
                 }

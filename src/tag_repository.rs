@@ -10,7 +10,7 @@ use std::str::FromStr;
 
 use atomic_write_file::AtomicWriteFile;
 use serde::{Deserialize, Serialize};
-use snafu::{ensure, IntoError, ResultExt, Snafu};
+use snafu::{IntoError, ResultExt, Snafu, ensure};
 use tracing::error;
 
 use crate::newtype;
@@ -121,10 +121,11 @@ impl std::fmt::Display for SyncedPath {
     }
 }
 
-struct TagDiff {
-    identical: Tags,
-    left_only: Tags,
-    right_only: Tags,
+#[derive(Debug, Clone)]
+pub struct TagDiff {
+    pub identical: Tags,
+    pub left_only: Tags,
+    pub right_only: Tags,
 }
 
 #[derive(Debug, Snafu)]
@@ -284,27 +285,17 @@ impl Tags {
         Self(BTreeSet::new())
     }
 
-    fn diff(self, Self(mut right): Self) -> TagDiff {
-        let mut left = BTreeSet::new();
-        let mut both = BTreeSet::new();
-
-        for tag in self.0 {
-            if right.take(&tag).is_none() {
-                left.insert(tag);
-            } else {
-                both.insert(tag);
-            }
-        }
-
+    fn diff(&self, Self(right): &Self) -> TagDiff {
+        let left = &self.0;
         TagDiff {
-            identical: Self(both),
-            left_only: Self(left),
-            right_only: Self(right),
+            identical: Self(left & right),
+            left_only: Self(left - right),
+            right_only: Self(right - left),
         }
     }
 
-    pub fn insert_all(&mut self, source: &Self) {
-        self.0.extend(source.0.iter().cloned());
+    pub fn insert_all(&mut self, source: Self) {
+        self.0.extend(source.0);
     }
 
     pub fn insert_one(&mut self, tag: Tag) {
@@ -435,14 +426,46 @@ impl Repository {
     /// This function panics if the synchronization prefixes between the repositories
     /// don't match. In this case, the results would be garbage.
     #[must_use]
-    pub fn diff(self, other: Self, keep_side_on_conflict: Side) -> DiffIterator {
+    pub fn diff<'collection>(
+        &'collection self,
+        other: &'collection Self,
+    ) -> DiffIterator<'collection> {
         assert_eq!(self.prefixes, other.prefixes);
-        DiffIterator::new(
-            self.files.into_iter(),
-            other.files.into_iter(),
-            self.prefixes,
-            keep_side_on_conflict,
-        )
+        DiffIterator::new(self.files.iter(), other.files.iter())
+    }
+
+    /// Applies the given difference hunks to the repository.
+    ///
+    /// # Panics
+    ///
+    /// If the hunk content conflicts with the repository state.
+    pub fn patch(
+        &mut self,
+        keep_side_on_conflict: Side,
+        hunks: impl IntoIterator<Item = DiffResult>,
+    ) {
+        for DiffResult { path, tags } in hunks {
+            let reconstructed_tags = Tags(&tags.identical.0 | &tags.left_only.0);
+            let mut result_tags = tags.identical;
+            match keep_side_on_conflict {
+                Side::Left => {
+                    result_tags.insert_all(tags.left_only);
+                }
+                Side::Right => {
+                    result_tags.insert_all(tags.right_only);
+                }
+                Side::Both => {
+                    result_tags.insert_all(tags.left_only);
+                    result_tags.insert_all(tags.right_only);
+                }
+            }
+
+            let old_tags = self.files.insert(path, result_tags).unwrap_or_default();
+            assert_eq!(
+                old_tags, reconstructed_tags,
+                "Conflict while applying patch to tag repository"
+            );
+        }
     }
 
     /// Store the repository on disk in json format.
@@ -515,15 +538,12 @@ pub enum FileLocation {
 }
 
 #[derive(Debug)]
-pub struct DiffIterator {
-    left: Peekable<MapIter>,
-    right: Peekable<MapIter>,
-    prefixes: Vec<PrefixMapping>,
-    files: BTreeMap<SyncedPath, Tags>,
-    pub source_of_truth: Side,
+pub struct DiffIterator<'collection> {
+    left: Peekable<MapIter<'collection>>,
+    right: Peekable<MapIter<'collection>>,
 }
 
-impl Iterator for &mut DiffIterator {
+impl<'collection> Iterator for DiffIterator<'collection> {
     type Item = DiffResult;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -556,75 +576,40 @@ impl Iterator for &mut DiffIterator {
     }
 }
 
-type MapIter = std::collections::btree_map::IntoIter<SyncedPath, Tags>;
+type MapIter<'collection> = std::collections::btree_map::Iter<'collection, SyncedPath, Tags>;
 
-impl DiffIterator {
-    pub fn new(
-        left: MapIter,
-        right: MapIter,
-        prefixes: Vec<PrefixMapping>,
-        source_of_truth: Side,
-    ) -> Self {
+impl<'collection> DiffIterator<'collection> {
+    pub fn new(left: MapIter<'collection>, right: MapIter<'collection>) -> Self {
         Self {
             left: left.peekable(),
             right: right.peekable(),
-            prefixes,
-            files: BTreeMap::new(),
-            source_of_truth,
         }
-    }
-
-    pub fn finish(mut self) -> Repository {
-        // exhaust iterator if not already exhausted
-        (&mut self).for_each(drop);
-        Repository {
-            prefixes: self.prefixes,
-            files: self.files,
-        }
-    }
-
-    fn diff_tags(&mut self, left: Tags, right: Tags, path: SyncedPath) -> (Tags, Tags) {
-        let diff = left.diff(right);
-        let mut result_tags = diff.identical;
-
-        match self.source_of_truth {
-            Side::Left => {
-                result_tags.insert_all(&diff.left_only);
-            }
-            Side::Right => {
-                result_tags.insert_all(&diff.right_only);
-            }
-            Side::Both => {
-                result_tags.insert_all(&diff.left_only);
-                result_tags.insert_all(&diff.right_only);
-            }
-        }
-
-        self.files.insert(path, result_tags);
-
-        (diff.left_only, diff.right_only)
     }
 
     fn advance(&mut self, side: Side) -> Option<DiffResult> {
-        let ((same_path, left_tags), (path, right_tags)) = match side {
+        let (path, left_tags, right_tags) = match side {
             Side::Left => {
                 let (path, left) = self.left.next()?;
-                ((path.clone(), left), (path, Tags::new()))
+                (path, left, &Tags::new())
             }
             Side::Right => {
                 let (path, right) = self.right.next()?;
-                ((path.clone(), Tags::new()), (path, right))
+                (path, &Tags::new(), right)
             }
-            Side::Both => (self.left.next()?, self.right.next()?),
+            Side::Both => {
+                let (path, left) = self.left.next()?;
+                let (same_path, right) = self.right.next()?;
+                assert_eq!(path, same_path, "Path should be the same");
+                (path, left, right)
+            }
         };
 
-        let (left_only, right_only) = self.diff_tags(left_tags, right_tags, same_path);
-        let is_different = !left_only.is_empty() || !right_only.is_empty();
+        let diff = left_tags.diff(right_tags);
+        let is_different = !diff.left_only.is_empty() || !diff.right_only.is_empty();
 
-        is_different.then_some(DiffResult {
-            path,
-            left_only,
-            right_only,
+        is_different.then(|| DiffResult {
+            path: path.clone(),
+            tags: diff,
         })
     }
 }
@@ -632,8 +617,7 @@ impl DiffIterator {
 #[derive(Debug, Clone)]
 pub struct DiffResult {
     pub path: SyncedPath,
-    pub left_only: Tags,
-    pub right_only: Tags,
+    pub tags: TagDiff,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -713,9 +697,7 @@ mod tests {
         let local_repo = make_repo(prefixes.clone(), &files, false);
         let remote_repo = make_repo(prefixes, &files, true);
 
-        let mut diffs = local_repo.diff(remote_repo, Side::Both);
-
-        let diff_results_actual: Vec<_> = (&mut diffs).collect();
+        let diff_results_actual: Vec<_> = local_repo.diff(&remote_repo).collect();
         let diff_results_expected: Vec<_> = files
             .iter()
             .filter(|(_, _, local, remote)| !local.is_empty() || !remote.is_empty())
@@ -724,8 +706,8 @@ mod tests {
         assert_eq!(diff_results_actual.len(), diff_results_expected.len());
         for (actual, expected) in std::iter::zip(diff_results_actual, diff_results_expected) {
             let (file_path, _, left_only, right_only) = expected;
-            assert_eq!(actual.left_only, left_only.iter().copied().collect());
-            assert_eq!(actual.right_only, right_only.iter().copied().collect());
+            assert_eq!(actual.tags.left_only, left_only.iter().copied().collect());
+            assert_eq!(actual.tags.right_only, right_only.iter().copied().collect());
             assert_eq!(actual.path, *file_path);
         }
     }
@@ -749,14 +731,14 @@ mod tests {
         let prefixes = mock_prefixes();
         let files = mock_files();
 
-        let local_repo = make_repo(prefixes.clone(), &files, false);
+        let mut local_repo = make_repo(prefixes.clone(), &files, false);
         let remote_repo = make_repo(prefixes.clone(), &files, true);
 
-        let diffs = local_repo.diff(remote_repo, keep_action);
-        let new_repo = diffs.finish();
-        println!("{new_repo:?}");
-        assert_eq!(new_repo.prefixes, prefixes);
-        for (actual, expected) in std::iter::zip(new_repo.files, files) {
+        let diffs: Vec<_> = local_repo.diff(&remote_repo).collect();
+        local_repo.patch(keep_action, diffs);
+        println!("{local_repo:?}");
+        assert_eq!(local_repo.prefixes, prefixes);
+        for (actual, expected) in std::iter::zip(local_repo.files, files) {
             let (path, combined, local, remote) = expected;
             let tags = match keep_action {
                 Side::Left => combined.into_iter().chain(local).collect(),

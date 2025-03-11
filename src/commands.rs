@@ -1,6 +1,6 @@
 use crate::{
-    tag_repository::{DiffResult, Side},
     SyncedPath, SyncedPathPrinter, Tag, Tags,
+    tag_repository::{DiffResult, Side},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -61,8 +61,8 @@ where
                 .into_iter()
                 .filter_map(|res| {
                     Command::new(res.path)
-                        .add(res.left_only)
-                        .remove(res.right_only)
+                        .add(res.tags.left_only)
+                        .remove(res.tags.right_only)
                         .none_if_empty()
                 })
                 .collect();
@@ -73,8 +73,8 @@ where
                 .into_iter()
                 .filter_map(|res| {
                     Command::new(res.path)
-                        .remove(res.left_only)
-                        .add(res.right_only)
+                        .remove(res.tags.left_only)
+                        .add(res.tags.right_only)
                         .none_if_empty()
                 })
                 .collect();
@@ -88,12 +88,14 @@ where
                 push_some(
                     &mut right,
                     Command::new(res.path.clone())
-                        .add(res.left_only)
+                        .add(res.tags.left_only)
                         .none_if_empty(),
                 );
                 push_some(
                     &mut left,
-                    Command::new(res.path).add(res.right_only).none_if_empty(),
+                    Command::new(res.path)
+                        .add(res.tags.right_only)
+                        .none_if_empty(),
                 );
             }
 

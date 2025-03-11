@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use figment::{
-    providers::{Env, Format, Serialized, Toml},
     Figment,
+    providers::{Env, Format, Serialized, Toml},
 };
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{tag_repository::Side, take_last_n_chars, PrefixMapping};
+use crate::{PrefixMapping, tag_repository::Side, take_last_n_chars};
 
 #[derive(Deserialize, Serialize)]
 pub struct Config {

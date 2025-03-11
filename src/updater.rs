@@ -3,10 +3,9 @@ use std::sync::Arc;
 use snafu::Snafu;
 
 use crate::{
-    resolve_diffs,
-    tag_repository::{LoadError, PersistingError, Side},
     CommandsFormatter, Config, FileSystem, ListTagsError, LocalError, LocalFs, RemoteFs,
-    Repository,
+    Repository, resolve_diffs,
+    tag_repository::{LoadError, PersistingError, Side},
 };
 
 pub struct Uninitialized {
@@ -65,7 +64,9 @@ impl Uninitialized {
                 Err(self)
             }
             Ok(_) => {
-                tracing::error!("Repository created for incompatible prefix mapping configuration. Ignoring it.");
+                tracing::error!(
+                    "Repository created for incompatible prefix mapping configuration. Ignoring it."
+                );
                 Err(self)
             }
             Err(e) => {

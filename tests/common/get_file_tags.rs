@@ -2,7 +2,7 @@ use core::str;
 use std::borrow::Cow;
 
 use nextcloud_tag_sync::{
-    parse, Body, DeserializeError, FileId, ListTagsMultiStatus, Parse, Request, Tags,
+    Body, DeserializeError, FileId, ListTagsMultiStatus, Parse, Request, Tags, parse,
 };
 use reqwest::header::HeaderMap;
 

@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
 use askama::Template;
-use reqwest::header::{HeaderMap, CONTENT_TYPE};
-use snafu::{prelude::*, ResultExt};
+use reqwest::header::{CONTENT_TYPE, HeaderMap};
+use snafu::{ResultExt, prelude::*};
 use tracing::{debug, error, info, trace};
 use url::Url;
 

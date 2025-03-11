@@ -17,4 +17,4 @@ pub use tag_file::TagFile;
 pub use untag_file::UntagFile;
 pub type ListTagsMultiStatus = list_tags::MultiStatus;
 
-pub use common::{parse, Body, DeserializeError, Parse, Request};
+pub use common::{Body, DeserializeError, Parse, Request, parse};

@@ -65,17 +65,13 @@ pub fn extract_file_id(h: &HeaderMap) -> Result<FileId, ParseFileTagError> {
 pub enum ParseFileTagError {
     #[snafu(display("Header 'oc-fileid' was missing from response",))]
     MissingFileIdHeader,
-    #[snafu(display(
-        "Failed to parse file id {file_id} because of non-numeric symbols: {source}"
-    ))]
+    #[snafu(display("Failed to parse file id {file_id} because of non-numeric symbols: {source}"))]
     FileIdParseError {
         header_value: HeaderValue,
         file_id: String,
         source: ParseIntError,
     },
-    #[snafu(display(
-        "Failed to parse header {header_value:?} because of invalid UTF-8: {source}"
-    ))]
+    #[snafu(display("Failed to parse header {header_value:?} because of invalid UTF-8: {source}"))]
     NonUtf8FileId {
         header_value: HeaderValue,
         source: Utf8Error,

@@ -7,7 +7,7 @@ use reqwest::header::HeaderMap;
 
 use crate::{Tag, TagId};
 
-use super::{empty_as_none, parse, str_to_method, Body, DeserializeError, Parse, Request};
+use super::{Body, DeserializeError, Parse, Request, empty_as_none, parse, str_to_method};
 
 #[derive(Template)]
 #[template(path = "load_tags.xml")]
@@ -80,8 +80,9 @@ mod tests {
         let tags = ListTags::parse(&HeaderMap::new(), input).unwrap();
         let arch: Tag = "Architecture".parse().unwrap();
         assert_eq!(tags.len(), 237);
-        assert!(tags
-            .iter()
-            .any(|(&id, name)| id == TagId::from(73) && name == &arch));
+        assert!(
+            tags.iter()
+                .any(|(&id, name)| id == TagId::from(73) && name == &arch)
+        );
     }
 }

@@ -2,9 +2,9 @@ use bimap::BiHashMap;
 use create_dir::CreateDirectory;
 use get_file_tags::GetFileTags;
 use nextcloud_tag_sync::{
-    get_tags_of_file, Config, Connection, CreateTag, FileId, Tag, TagFile, TagMap, Tags, UntagFile,
+    Config, Connection, CreateTag, FileId, Tag, TagFile, TagMap, Tags, UntagFile, get_tags_of_file,
 };
-use testcontainers::{core::WaitFor, runners::AsyncRunner as _, ContainerAsync, Image};
+use testcontainers::{ContainerAsync, Image, core::WaitFor, runners::AsyncRunner as _};
 use upload_file::UploadFile;
 use url::Url;
 use walkdir::WalkDir;

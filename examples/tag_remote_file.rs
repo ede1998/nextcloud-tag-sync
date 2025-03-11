@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use nextcloud_tag_sync::{
-    load_config, Connection, FileId, ListFilesWithTag, TagFile, TagId, UntagFile,
+    Connection, FileId, ListFilesWithTag, TagFile, TagId, UntagFile, load_config,
 };
 
 #[tokio::main]

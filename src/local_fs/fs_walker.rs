@@ -6,7 +6,7 @@ use walkdir::WalkDir;
 
 use crate::{Config, PrefixMapping, Repository};
 
-use super::{get_tags_of_file, FileError};
+use super::{FileError, get_tags_of_file};
 
 pub struct LocalFsWalker<'a> {
     tag_property_name: &'a str,

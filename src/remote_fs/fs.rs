@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::{HashMap, HashSet, hash_map::Entry},
     path::Path,
     sync::Arc,
 };
@@ -8,11 +8,11 @@ use snafu::{ResultExt, Snafu};
 use tracing::{debug, error, warn};
 
 use crate::{
-    updater::RemoteSnafu, Command, Config, Connection, CreateTag, FileId, FileSystem, IntoOk,
-    Modification, SyncedPath, Tag, TagFile, TagId, Tags, UntagFile,
+    Command, Config, Connection, CreateTag, FileId, FileSystem, IntoOk, Modification, SyncedPath,
+    Tag, TagFile, TagId, Tags, UntagFile, updater::RemoteSnafu,
 };
 
-use super::{common::LimitedConcurrency, DeserializeError, GetFileId, RequestError};
+use super::{DeserializeError, GetFileId, RequestError, common::LimitedConcurrency};
 
 pub type FileMap = bimap::BiHashMap<FileId, SyncedPath>;
 pub type TagMap = bimap::BiHashMap<TagId, Tag>;

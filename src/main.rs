@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use nextcloud_tag_sync::{load_config, Uninitialized};
-use snafu::{prelude::*, Whatever};
+use nextcloud_tag_sync::{Uninitialized, load_config};
+use snafu::{Whatever, prelude::*};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 

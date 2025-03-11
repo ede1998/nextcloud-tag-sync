@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use nextcloud_tag_sync::{load_config, Connection, ListFilesWithTag, ListTags, Tag};
+use nextcloud_tag_sync::{Connection, ListFilesWithTag, ListTags, Tag, load_config};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

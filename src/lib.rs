@@ -13,18 +13,18 @@ mod remote_fs;
 mod tag_repository;
 mod updater;
 
-use helper::{newtype, take_last_n_chars, IntoOk, SyncedPathPrinter};
+use helper::{IntoOk, SyncedPathPrinter, newtype, take_last_n_chars};
 use tag_repository::SyncedPath;
 
 pub use commands::*;
-pub use config::{load_config, Config};
+pub use config::{Config, load_config};
 pub use local_fs::{
-    get_tags_of_file, FileError, FileSystemLoopError, LocalError, LocalFs, LocalFsWalker,
+    FileError, FileSystemLoopError, LocalError, LocalFs, LocalFsWalker, get_tags_of_file,
 };
 pub use remote_fs::{
-    parse, Body, Connection, CreateTag, DeserializeError, FileId, FileMap, ListFilesWithTag,
-    ListTags, ListTagsError, ListTagsMultiStatus, Parse, RemoteFs, Request, TagFile, TagId, TagMap,
-    UntagFile,
+    Body, Connection, CreateTag, DeserializeError, FileId, FileMap, ListFilesWithTag, ListTags,
+    ListTagsError, ListTagsMultiStatus, Parse, RemoteFs, Request, TagFile, TagId, TagMap,
+    UntagFile, parse,
 };
 pub use tag_repository::{FileLocation, PrefixMapping, Repository, Side, Tag, Tags};
 

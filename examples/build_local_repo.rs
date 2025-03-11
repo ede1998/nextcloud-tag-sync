@@ -1,4 +1,4 @@
-use nextcloud_tag_sync::{load_config, Config, LocalFsWalker, PrefixMapping};
+use nextcloud_tag_sync::{Config, LocalFsWalker, PrefixMapping, load_config};
 use snafu::{ResultExt, Whatever};
 
 #[snafu::report]

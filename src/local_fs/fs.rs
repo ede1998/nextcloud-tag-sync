@@ -9,8 +9,8 @@ use tokio::task::JoinError;
 use tracing::{debug, error};
 
 use crate::{
-    updater::LocalSnafu, Command, Config, FileSystem, IntoOk, Modification, PrefixMapping,
-    TagAction, Tags,
+    Command, Config, FileSystem, IntoOk, Modification, PrefixMapping, TagAction, Tags,
+    updater::LocalSnafu,
 };
 
 use super::LocalFsWalker;

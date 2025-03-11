@@ -6,7 +6,7 @@ use reqwest::header::HeaderMap;
 
 use crate::FileId;
 
-use super::{parse, str_to_method, Body, DeserializeError, Parse, Request};
+use super::{Body, DeserializeError, Parse, Request, parse, str_to_method};
 
 #[derive(Template)]
 #[template(path = "get_file_id.xml")]

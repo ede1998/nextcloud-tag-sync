@@ -1,7 +1,7 @@
 use std::{borrow::Cow, num::ParseIntError};
 
 use askama::Template;
-use reqwest::header::{HeaderMap, ToStrError, CONTENT_LOCATION};
+use reqwest::header::{CONTENT_LOCATION, HeaderMap, ToStrError};
 use snafu::{OptionExt, ResultExt, Snafu};
 
 use crate::{Tag, TagId};

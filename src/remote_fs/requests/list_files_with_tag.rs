@@ -6,7 +6,7 @@ use url::Url;
 
 use crate::{FileId, TagId};
 
-use super::{common::str_to_method, parse, Body, DeserializeError, Parse, Request};
+use super::{Body, DeserializeError, Parse, Request, common::str_to_method, parse};
 
 /// List all files with the given tag. Directories are ignored.
 #[derive(Template)]

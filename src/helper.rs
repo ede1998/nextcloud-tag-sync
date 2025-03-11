@@ -34,6 +34,7 @@ pub fn take_last_n_chars(string: &str, n: usize) -> &str {
         .nth(n - 1)
         .map_or(0, |(idx, _)| idx);
     // Safety: we just computed the index via `char_indices`.
+    // The fallback 0 is always valid even if the string is empty.
     unsafe { string.get_unchecked(len..) }
 }
 
@@ -336,5 +337,17 @@ mod tests {
         ├── house.txt -> data
         └── mouse.txt -> other data\n"
         );
+    }
+
+    #[test]
+    fn last_n_chars() {
+        let world = take_last_n_chars("Hello World", 5);
+        assert_eq!(world, "World");
+    }
+
+    #[test]
+    fn last_n_chars_empty() {
+        let empty = take_last_n_chars("", 5);
+        assert_eq!(empty, "");
     }
 }

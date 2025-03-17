@@ -20,19 +20,14 @@ async fn main() -> Result<(), Whatever> {
         "use docker nextcloud for test!"
     );
 
-    let uninitialized = Uninitialized::new(config);
-    let mut initialized = uninitialized
+    let mut initialized = Uninitialized::new(config)
         .initialize()
         .await
         .whatever_context("failed to initialize repository")?;
     initialized
-        .sync_local_to_remote()
+        .sync()
         .await
         .whatever_context("failed to sync local to remote")?;
-    initialized
-        .sync_remote_to_local()
-        .await
-        .whatever_context("failed to sync remote to local")?;
     initialized
         .persist_repository()
         .whatever_context("failed to persist repository")?;

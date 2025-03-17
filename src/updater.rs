@@ -5,7 +5,7 @@ use snafu::Snafu;
 use crate::{
     CommandsFormatter, Config, FileSystem, ListTagsError, LocalError, LocalFs, RemoteFs,
     Repository, resolve_diffs,
-    tag_repository::{LoadError, PersistingError, Side},
+    tag_repository::{DiffResult, LoadError, PersistingError, Side, TagDiff},
 };
 
 pub struct Uninitialized {
@@ -30,20 +30,21 @@ impl Uninitialized {
 
         let (local, remote) = merge_results(futures::join!(local_repo_task, remote_repo_task))?;
 
-        let mut diff_events = local.diff(remote, self.config.keep_side_on_conflict);
+        let diff: Vec<_> = local.diff(&remote).collect();
         let (local_actions, remote_actions) =
-            resolve_diffs(&mut diff_events, self.config.keep_side_on_conflict);
+            resolve_diffs(diff.clone(), self.config.keep_side_on_conflict);
 
-        let cmd_fmt = CommandsFormatter(&local_actions);
-        tracing::debug!("Local actions: {cmd_fmt}");
-        let cmd_fmt = CommandsFormatter(&remote_actions);
-        tracing::debug!("Remote actions: {cmd_fmt}");
+        tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
+        tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
 
         self.remote_fs.update_tags(remote_actions).await;
         self.local_fs.update_tags(local_actions).await;
 
+        let mut repo = local;
+        repo.patch(self.config.keep_side_on_conflict, diff);
+
         Ok(Initialized {
-            repo: diff_events.finish(),
+            repo,
             remote_fs: self.remote_fs,
             local_fs: self.local_fs,
             config: self.config,
@@ -105,44 +106,35 @@ impl Initialized {
         &self.repo
     }
 
-    /// Computes changes of the local tags compared to the cache and uploads all changes to the remote.
+    /// Computes changes of the local and remote tags compared to the cache and applies to change on the other side as well as updates the internal model.
     ///
     /// # Errors
     ///
-    /// This function will return an error if computing the local file tag repository fails.
-    pub async fn sync_local_to_remote(&mut self) -> Result<(), InitError> {
-        let local = self.local_fs.create_repo().await?;
+    /// This function will return an error if computing either file tag repository fails.
+    pub async fn sync(&mut self) -> Result<(), InitError> {
+        let (local, remote) = merge_results(futures::join!(
+            self.local_fs.create_repo(),
+            self.remote_fs.create_repo()
+        ))?;
+        let mut local: Vec<_> = self.repo.diff(&local).collect();
+        let mut remote: Vec<_> = self.repo.diff(&remote).collect();
 
-        let repo = std::mem::take(&mut self.repo);
-        let mut diff_events = repo.diff(local, Side::Right);
-        let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
+        let identical = filter_identical_modifications(&mut local, &mut remote);
 
-        let cmd_fmt = CommandsFormatter(&actions);
-        tracing::debug!("Remote actions: {cmd_fmt}");
+        let local_actions = resolve_diffs(remote.clone(), Side::Right).1;
+        let remote_actions = resolve_diffs(local.clone(), Side::Right).1;
+        tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
+        tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
 
-        self.remote_fs.update_tags(actions).await;
-        self.repo = diff_events.finish();
-        Ok(())
-    }
+        futures::join!(
+            self.local_fs.update_tags(local_actions),
+            self.remote_fs.update_tags(remote_actions)
+        );
 
-    /// Computes changes of the remote tags compared to the cache and mirrors all changes to the local filesystem.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if computing the remote file tag repository fails.
-    pub async fn sync_remote_to_local(&mut self) -> Result<(), InitError> {
-        let remote = self.remote_fs.create_repo().await?;
+        let merged = merge_modifications([identical, local, remote]);
 
-        let repo = std::mem::take(&mut self.repo);
-        let mut diff_events = repo.diff(remote, Side::Right);
-        let (_, actions) = resolve_diffs(&mut diff_events, Side::Right);
+        self.repo.patch(Side::Right, merged);
 
-        let cmd_fmt = CommandsFormatter(&actions);
-        tracing::debug!("Local actions: {cmd_fmt}");
-
-        self.local_fs.update_tags(actions).await;
-
-        self.repo = diff_events.finish();
         Ok(())
     }
 
@@ -154,6 +146,76 @@ impl Initialized {
     pub fn persist_repository(&self) -> Result<(), PersistingError> {
         self.repo.persist_on_disk(&self.config.tag_database)
     }
+}
+
+fn merge_modifications(diffs: impl IntoIterator<Item = Vec<DiffResult>>) -> Vec<DiffResult> {
+    let mut remainder = diffs.into_iter();
+    let Some(mut result) = remainder.next() else {
+        return Vec::new();
+    };
+
+    let comparator = |a: &DiffResult, b: &DiffResult| a.path.cmp(&b.path);
+    result.sort_unstable_by(comparator);
+
+    remainder.fold(result, |result, mut other| {
+        other.sort_unstable_by(comparator);
+        itertools::merge_join_by(result, other, comparator)
+            .map(|merged| match merged {
+                itertools::EitherOrBoth::Left(r) => r,
+                itertools::EitherOrBoth::Right(o) => o,
+                itertools::EitherOrBoth::Both(mut r, o) => {
+                    r.tags.left_only.insert_all(o.tags.left_only);
+                    // Don't add unchanged tags.
+                    // r.tags.identical.insert_all(o.tags.identical);
+                    r.tags.right_only.insert_all(o.tags.right_only);
+                    r
+                }
+            })
+            .collect()
+    })
+}
+
+fn filter_identical_modifications(
+    left: &mut Vec<DiffResult>,
+    right: &mut Vec<DiffResult>,
+) -> Vec<DiffResult> {
+    let comparator = |a: &DiffResult, b: &DiffResult| a.path.cmp(&b.path);
+
+    left.sort_unstable_by(comparator);
+    right.sort_unstable_by(comparator);
+
+    let mut identical = Vec::new();
+
+    for merged in itertools::merge_join_by(std::mem::take(left), std::mem::take(right), comparator)
+    {
+        match merged {
+            itertools::EitherOrBoth::Left(l) => left.push(l),
+            itertools::EitherOrBoth::Right(r) => right.push(r),
+            itertools::EitherOrBoth::Both(l, r) if l == r => identical.push(l),
+            itertools::EitherOrBoth::Both(l, r) => {
+                let removed = l.tags.removed().diff(r.tags.removed());
+                let unchanged = l.tags.unchanged().diff(r.tags.unchanged());
+                let added = l.tags.added().diff(r.tags.added());
+
+                left.push(DiffResult {
+                    path: l.path,
+                    tags: TagDiff::new(removed.left_only, unchanged.left_only, added.left_only),
+                });
+
+                identical.push(DiffResult {
+                    path: r.path.clone(),
+                    tags: TagDiff::new(removed.identical, unchanged.identical, added.identical),
+                });
+
+                right.push(DiffResult {
+                    path: r.path,
+                    tags: TagDiff::new(removed.right_only, unchanged.right_only, added.right_only),
+                });
+            }
+        }
+    }
+
+    identical
 }
 
 #[allow(clippy::result_large_err)] // only runs once -> no performance issue anyway

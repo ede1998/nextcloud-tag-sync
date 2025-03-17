@@ -121,11 +121,33 @@ impl std::fmt::Display for SyncedPath {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TagDiff {
     pub identical: Tags,
     pub left_only: Tags,
     pub right_only: Tags,
+}
+
+impl TagDiff {
+    pub const fn new(removed: Tags, unchanged: Tags, added: Tags) -> Self {
+        Self {
+            identical: unchanged,
+            left_only: removed,
+            right_only: added,
+        }
+    }
+
+    pub const fn removed(&self) -> &Tags {
+        &self.left_only
+    }
+
+    pub const fn added(&self) -> &Tags {
+        &self.right_only
+    }
+
+    pub const fn unchanged(&self) -> &Tags {
+        &self.identical
+    }
 }
 
 #[derive(Debug, Snafu)]
@@ -285,7 +307,8 @@ impl Tags {
         Self(BTreeSet::new())
     }
 
-    fn diff(&self, Self(right): &Self) -> TagDiff {
+    #[must_use]
+    pub fn diff(&self, Self(right): &Self) -> TagDiff {
         let left = &self.0;
         TagDiff {
             identical: Self(left & right),
@@ -460,10 +483,13 @@ impl Repository {
                 }
             }
 
-            let old_tags = self.files.insert(path, result_tags).unwrap_or_default();
+            let old_tags = self
+                .files
+                .insert(path.clone(), result_tags.clone())
+                .unwrap_or_default();
             assert_eq!(
                 old_tags, reconstructed_tags,
-                "Conflict while applying patch to tag repository"
+                "Conflict while applying patch to tag repository: old_tags != reconstructed_tags"
             );
         }
     }
@@ -543,7 +569,7 @@ pub struct DiffIterator<'collection> {
     right: Peekable<MapIter<'collection>>,
 }
 
-impl<'collection> Iterator for DiffIterator<'collection> {
+impl Iterator for DiffIterator<'_> {
     type Item = DiffResult;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -614,7 +640,7 @@ impl<'collection> DiffIterator<'collection> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiffResult {
     pub path: SyncedPath,
     pub tags: TagDiff,

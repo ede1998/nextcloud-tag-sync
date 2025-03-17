@@ -437,8 +437,7 @@ async fn run_follow_up_sync_bidirectional() -> Result {
     env.untag_remote(bar::baz::DRAT_PDF, tag::RED).await?;
 
     let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
-    initialized.sync_local_to_remote().await?;
-    initialized.sync_remote_to_local().await?;
+    initialized.sync().await?;
 
     env.assert_snapshot("run_followup_sync_bidirectional", initialized.repository());
     let expected = [

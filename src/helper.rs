@@ -89,24 +89,24 @@ where
     T: Display,
 {
     Number(usize),
-    String { name: &'a OsStr, extras: T },
+    String { name: &'a OsStr, extras: Option<T> },
 }
 
 impl<'a, T> Item<'a, T>
 where
-    T: Display + Default,
+    T: Display,
 {
     fn string(str: &'a str) -> Self {
         Self::String {
             name: OsStr::new(str),
-            extras: T::default(),
+            extras: None,
         }
     }
 
-    fn os_str(str: &'a OsStr) -> Self {
+    const fn os_str(str: &'a OsStr) -> Self {
         Self::String {
             name: str,
-            extras: T::default(),
+            extras: None,
         }
     }
 }
@@ -117,7 +117,7 @@ where
 {
     fn set_extras(&mut self, data: T) {
         if let Self::String { extras, .. } = self {
-            *extras = data;
+            *extras = Some(data);
         }
     }
 }
@@ -157,7 +157,11 @@ where
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Item::Number(num) => write!(f, "{num}"),
-            Item::String { name, extras } => write!(f, "{}{}", name.to_string_lossy(), extras),
+            Item::String {
+                name,
+                extras: Some(extras),
+            } => write!(f, "{}{}", name.to_string_lossy(), extras),
+            Item::String { name, extras: None } => write!(f, "{}", name.to_string_lossy()),
         }
     }
 }
@@ -189,12 +193,14 @@ impl<'a> FromIterator<&'a SyncedPath> for SyncedPathPrinter<'a, DisplayUnit> {
 
 impl<'a, T> FromIterator<(&'a SyncedPath, T)> for SyncedPathPrinter<'a, T>
 where
-    T: Display + Default,
+    T: Display,
 {
     fn from_iter<I>(collection: I) -> Self
     where
         I: IntoIterator<Item = (&'a SyncedPath, T)>,
     {
+        use std::path::Component;
+
         let mut paths: Vec<_> = collection.into_iter().collect();
         paths.sort_unstable_by(|l, r| l.0.cmp(r.0));
 
@@ -209,7 +215,14 @@ where
                 &mut tree.leaves[root_id]
             };
 
-            for component in path.relative().components() {
+            let components: &mut dyn Iterator<Item = Component> =
+                if path.relative().as_os_str().is_empty() {
+                    &mut std::iter::once(Component::Normal(OsStr::new("")))
+                } else {
+                    &mut path.relative().components()
+                };
+
+            for component in components {
                 let element = Item::os_str(component.as_os_str());
                 let (already_exists, element_at) = into_either(tree.leaves.binary_search_by(|x| {
                     x.root
@@ -337,6 +350,21 @@ mod tests {
         ├── house.txt -> data
         └── mouse.txt -> other data\n"
         );
+    }
+
+    #[test]
+    fn print_tree_with_empty_filename() {
+        let files = [SyncedPath::new(0, ""), SyncedPath::new(1, "")];
+        let printer = SyncedPathPrinter::from_iter(&files);
+        println!("{printer}");
+        assert_eq!(
+            printer.to_string(),
+            "ROOT
+├── 0
+│   └── 
+└── 1
+    └── 
+");
     }
 
     #[test]

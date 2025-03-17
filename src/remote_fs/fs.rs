@@ -19,8 +19,8 @@ pub type TagMap = bimap::BiHashMap<TagId, Tag>;
 
 #[derive(Debug)]
 pub struct RemoteFs {
-    pub tags: TagMap,
-    pub files: FileMap,
+    tags: TagMap,
+    files: FileMap,
     config: Arc<Config>,
 }
 

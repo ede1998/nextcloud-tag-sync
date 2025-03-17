@@ -24,7 +24,8 @@ pub struct SyncedPath {
 }
 
 impl SyncedPath {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fuzzing"))]
+    #[must_use]
     pub fn new(prefix_id: usize, path: &str) -> Self {
         Self {
             prefix_id: PrefixMappingId(prefix_id),
@@ -32,18 +33,22 @@ impl SyncedPath {
         }
     }
 
+    #[must_use]
     pub fn local_file(&self, prefixes: &[PrefixMapping]) -> PathBuf {
         prefixes[self.prefix_id.0].local.join(&self.path)
     }
 
+    #[must_use]
     pub fn remote_file(&self, prefixes: &[PrefixMapping]) -> PathBuf {
         prefixes[self.prefix_id.0].remote.join(&self.path)
     }
 
+    #[must_use]
     pub fn relative(&self) -> &Path {
         &self.path
     }
 
+    #[must_use]
     pub const fn root(&self) -> PrefixMappingId {
         self.prefix_id
     }
@@ -182,10 +187,7 @@ pub struct Tag(String);
 impl Tag {
     pub(crate) fn new_or_log_error(s: &str) -> Option<Self> {
         s.parse()
-            .map_err(|err| {
-                error!("Invalid tag name '{s}': {err}");
-                err
-            })
+            .inspect_err(|err| error!("Invalid tag name '{s}': {err}"))
             .ok()
     }
 }
@@ -381,7 +383,7 @@ impl PrefixMapping {
     pub const EXPECTED_PREFIX: &str = "/remote.php/dav/files/";
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Repository {
     prefixes: Vec<PrefixMapping>,
     files: BTreeMap<SyncedPath, Tags>,
@@ -394,6 +396,11 @@ impl Repository {
             prefixes,
             files: BTreeMap::new(),
         }
+    }
+
+    #[must_use]
+    pub const fn files(&self) -> &BTreeMap<SyncedPath, Tags> {
+        &self.files
     }
 
     #[must_use]

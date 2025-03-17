@@ -3,7 +3,7 @@ use std::sync::Arc;
 use snafu::Snafu;
 
 use crate::{
-    CommandsFormatter, Config, FileSystem, ListTagsError, LocalError, LocalFs, RemoteFs,
+    Command, CommandsFormatter, Config, FileSystem, ListTagsError, LocalError, LocalFs, RemoteFs,
     Repository, resolve_diffs,
     tag_repository::{DiffResult, LoadError, PersistingError, Side, TagDiff},
 };
@@ -36,24 +36,12 @@ impl Uninitialized {
             Side::Both => Repository::new(self.config.prefixes.clone()),
         };
 
-        let mut local: Vec<_> = initial_repo.diff(&local).collect();
-        let mut remote: Vec<_> = initial_repo.diff(&remote).collect();
-
-        let identical = filter_identical_modifications(&mut local, &mut remote);
-
-        let local_actions = resolve_diffs(remote.clone());
-        let remote_actions = resolve_diffs(local.clone());
-        tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
-        tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
+        let (local_actions, remote_actions) = in_memory_patch(&mut initial_repo, &local, &remote);
 
         futures::join!(
             self.local_fs.update_tags(local_actions),
             self.remote_fs.update_tags(remote_actions)
         );
-
-        let merged = merge_modifications([identical, local, remote]);
-
-        initial_repo.patch(merged);
 
         Ok(Initialized {
             repo: initial_repo,
@@ -128,24 +116,13 @@ impl Initialized {
             self.local_fs.create_repo(),
             self.remote_fs.create_repo()
         ))?;
-        let mut local: Vec<_> = self.repo.diff(&local).collect();
-        let mut remote: Vec<_> = self.repo.diff(&remote).collect();
 
-        let identical = filter_identical_modifications(&mut local, &mut remote);
-
-        let local_actions = resolve_diffs(remote.clone());
-        let remote_actions = resolve_diffs(local.clone());
-        tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
-        tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
+        let (local_actions, remote_actions) = in_memory_patch(&mut self.repo, &local, &remote);
 
         futures::join!(
             self.local_fs.update_tags(local_actions),
             self.remote_fs.update_tags(remote_actions)
         );
-
-        let merged = merge_modifications([identical, local, remote]);
-
-        self.repo.patch(merged);
 
         Ok(())
     }
@@ -158,6 +135,27 @@ impl Initialized {
     pub fn persist_repository(&self) -> Result<(), PersistingError> {
         self.repo.persist_on_disk(&self.config.tag_database)
     }
+}
+
+pub fn in_memory_patch(
+    original_repo: &mut Repository,
+    local: &Repository,
+    remote: &Repository,
+) -> (Vec<Command>, Vec<Command>) {
+    let mut local: Vec<_> = original_repo.diff(local).collect();
+    let mut remote: Vec<_> = original_repo.diff(remote).collect();
+
+    let identical = filter_identical_modifications(&mut local, &mut remote);
+
+    let local_actions = resolve_diffs(remote.clone());
+    let remote_actions = resolve_diffs(local.clone());
+    tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
+    tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
+
+    let merged = merge_modifications([identical, local, remote]);
+    original_repo.patch(merged);
+
+    (local_actions, remote_actions)
 }
 
 fn merge_modifications(diffs: impl IntoIterator<Item = Vec<DiffResult>>) -> Vec<DiffResult> {

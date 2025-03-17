@@ -13,8 +13,9 @@ mod remote_fs;
 mod tag_repository;
 mod updater;
 
-use helper::{IntoOk, SyncedPathPrinter, newtype, take_last_n_chars};
-use tag_repository::SyncedPath;
+use helper::{IntoOk, newtype, take_last_n_chars};
+pub use tag_repository::SyncedPath;
+pub use helper::SyncedPathPrinter;
 
 pub use commands::*;
 pub use config::{Config, load_config};
@@ -28,7 +29,7 @@ pub use remote_fs::{
 };
 pub use tag_repository::{FileLocation, PrefixMapping, Repository, Side, Tag, Tags};
 
-pub use updater::{InitError, Initialized, Uninitialized};
+pub use updater::{InitError, Initialized, Uninitialized, in_memory_patch};
 
 #[allow(
     async_fn_in_trait,

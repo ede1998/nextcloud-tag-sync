@@ -3,19 +3,19 @@ use crate::{
     tag_repository::DiffResult,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub enum Modification {
     Add,
     Remove,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, PartialOrd, Ord)]
 pub struct TagAction {
     pub tag: Tag,
     pub modification: Modification,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, PartialOrd, Ord)]
 pub struct Command {
     pub path: SyncedPath,
     pub actions: Vec<TagAction>,

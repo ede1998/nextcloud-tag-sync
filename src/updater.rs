@@ -25,26 +25,38 @@ impl Uninitialized {
     }
 
     async fn create_from_local_remote_diff(mut self) -> Result<Initialized, InitError> {
-        let remote_repo_task = self.remote_fs.create_repo();
-        let local_repo_task = self.local_fs.create_repo();
+        let (local, remote) = merge_results(futures::join!(
+            self.local_fs.create_repo(),
+            self.remote_fs.create_repo()
+        ))?;
 
-        let (local, remote) = merge_results(futures::join!(local_repo_task, remote_repo_task))?;
+        let mut initial_repo = match self.config.keep_side_on_conflict {
+            Side::Left => local.clone(),
+            Side::Right => remote.clone(),
+            Side::Both => Repository::new(self.config.prefixes.clone()),
+        };
 
-        let diff: Vec<_> = local.diff(&remote).collect();
-        let (local_actions, remote_actions) =
-            resolve_diffs(diff.clone(), self.config.keep_side_on_conflict);
+        let mut local: Vec<_> = initial_repo.diff(&local).collect();
+        let mut remote: Vec<_> = initial_repo.diff(&remote).collect();
 
-        tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
+        let identical = filter_identical_modifications(&mut local, &mut remote);
+
+        let local_actions = resolve_diffs(remote.clone());
+        let remote_actions = resolve_diffs(local.clone());
         tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
+        tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
 
-        self.remote_fs.update_tags(remote_actions).await;
-        self.local_fs.update_tags(local_actions).await;
+        futures::join!(
+            self.local_fs.update_tags(local_actions),
+            self.remote_fs.update_tags(remote_actions)
+        );
 
-        let mut repo = local;
-        repo.patch(self.config.keep_side_on_conflict, diff);
+        let merged = merge_modifications([identical, local, remote]);
+
+        initial_repo.patch(merged);
 
         Ok(Initialized {
-            repo,
+            repo: initial_repo,
             remote_fs: self.remote_fs,
             local_fs: self.local_fs,
             config: self.config,
@@ -121,8 +133,8 @@ impl Initialized {
 
         let identical = filter_identical_modifications(&mut local, &mut remote);
 
-        let local_actions = resolve_diffs(remote.clone(), Side::Right).1;
-        let remote_actions = resolve_diffs(local.clone(), Side::Right).1;
+        let local_actions = resolve_diffs(remote.clone());
+        let remote_actions = resolve_diffs(local.clone());
         tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
         tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
 
@@ -133,7 +145,7 @@ impl Initialized {
 
         let merged = merge_modifications([identical, local, remote]);
 
-        self.repo.patch(Side::Right, merged);
+        self.repo.patch(merged);
 
         Ok(())
     }

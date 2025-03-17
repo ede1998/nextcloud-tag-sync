@@ -1,6 +1,6 @@
 use crate::{
     SyncedPath, SyncedPathPrinter, Tag, Tags,
-    tag_repository::{DiffResult, Side},
+    tag_repository::DiffResult,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -51,63 +51,18 @@ impl Command {
     }
 }
 
-pub fn resolve_diffs<I>(iter: I, source_of_truth: Side) -> (Vec<Command>, Vec<Command>)
+pub fn resolve_diffs<I>(iter: I) -> Vec<Command>
 where
     I: IntoIterator<Item = DiffResult>,
 {
-    match source_of_truth {
-        Side::Left => {
-            let left = iter
-                .into_iter()
-                .filter_map(|res| {
-                    Command::new(res.path)
-                        .add(res.tags.left_only)
-                        .remove(res.tags.right_only)
-                        .none_if_empty()
-                })
-                .collect();
-            (left, Vec::new())
-        }
-        Side::Right => {
-            let right = iter
-                .into_iter()
-                .filter_map(|res| {
-                    Command::new(res.path)
-                        .remove(res.tags.left_only)
-                        .add(res.tags.right_only)
-                        .none_if_empty()
-                })
-                .collect();
-            (Vec::new(), right)
-        }
-        Side::Both => {
-            let mut right = Vec::new();
-            let mut left = Vec::new();
-
-            for res in iter {
-                push_some(
-                    &mut right,
-                    Command::new(res.path.clone())
-                        .add(res.tags.left_only)
-                        .none_if_empty(),
-                );
-                push_some(
-                    &mut left,
-                    Command::new(res.path)
-                        .add(res.tags.right_only)
-                        .none_if_empty(),
-                );
-            }
-
-            (left, right)
-        }
-    }
-}
-
-fn push_some<T>(vec: &mut Vec<T>, item: Option<T>) {
-    if let Some(t) = item {
-        vec.push(t);
-    }
+    iter.into_iter()
+        .filter_map(|res| {
+            Command::new(res.path)
+                .remove(res.tags.left_only)
+                .add(res.tags.right_only)
+                .none_if_empty()
+        })
+        .collect()
 }
 
 pub struct CommandsFormatter<'a>(pub &'a [Command]);

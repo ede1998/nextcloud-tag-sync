@@ -462,26 +462,11 @@ impl Repository {
     /// # Panics
     ///
     /// If the hunk content conflicts with the repository state.
-    pub fn patch(
-        &mut self,
-        keep_side_on_conflict: Side,
-        hunks: impl IntoIterator<Item = DiffResult>,
-    ) {
+    pub fn patch(&mut self, hunks: impl IntoIterator<Item = DiffResult>) {
         for DiffResult { path, tags } in hunks {
             let reconstructed_tags = Tags(&tags.identical.0 | &tags.left_only.0);
             let mut result_tags = tags.identical;
-            match keep_side_on_conflict {
-                Side::Left => {
-                    result_tags.insert_all(tags.left_only);
-                }
-                Side::Right => {
-                    result_tags.insert_all(tags.right_only);
-                }
-                Side::Both => {
-                    result_tags.insert_all(tags.left_only);
-                    result_tags.insert_all(tags.right_only);
-                }
-            }
+            result_tags.insert_all(tags.right_only);
 
             let old_tags = self
                 .files
@@ -739,38 +724,20 @@ mod tests {
     }
 
     #[test]
-    fn compute_new_repo_with_both() {
-        compute_new_repo(Side::Both);
-    }
-
-    #[test]
-    fn compute_new_repo_with_left() {
-        compute_new_repo(Side::Left);
-    }
-
-    #[test]
-    fn compute_new_repo_with_right() {
-        compute_new_repo(Side::Right);
-    }
-
-    fn compute_new_repo(keep_action: Side) {
+    fn compute_new_repo() {
         let prefixes = mock_prefixes();
         let files = mock_files();
 
-        let mut local_repo = make_repo(prefixes.clone(), &files, false);
-        let remote_repo = make_repo(prefixes.clone(), &files, true);
+        let mut initial = make_repo(prefixes.clone(), &files, false);
+        let modified = make_repo(prefixes.clone(), &files, true);
 
-        let diffs: Vec<_> = local_repo.diff(&remote_repo).collect();
-        local_repo.patch(keep_action, diffs);
-        println!("{local_repo:?}");
-        assert_eq!(local_repo.prefixes, prefixes);
-        for (actual, expected) in std::iter::zip(local_repo.files, files) {
-            let (path, combined, local, remote) = expected;
-            let tags = match keep_action {
-                Side::Left => combined.into_iter().chain(local).collect(),
-                Side::Right => combined.into_iter().chain(remote).collect(),
-                Side::Both => combined.into_iter().chain(local).chain(remote).collect(),
-            };
+        let diffs: Vec<_> = initial.diff(&modified).collect();
+        initial.patch(diffs);
+        println!("{initial:?}");
+        assert_eq!(initial.prefixes, prefixes);
+        for (actual, expected) in std::iter::zip(initial.files, files) {
+            let (path, combined, _initial, modified) = expected;
+            let tags = combined.into_iter().chain(modified).collect();
 
             assert_eq!(actual.1, tags, "Failed for file {}", path.path.display());
         }

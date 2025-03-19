@@ -9,7 +9,10 @@ cargo-fuzz = true
 
 [dependencies]
 arbitrary = { version = "1.4.1", features = ["derive"] }
+atty = "0.2.14"
 libfuzzer-sys = "0.4"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 
 [dependencies.nextcloud-tag-sync]
 path = ".."

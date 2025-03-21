@@ -15,7 +15,7 @@ use nextcloud_tag_sync::{
 use url::Url;
 use walkdir::WalkDir;
 
-static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "tests/data_basic".into());
+static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "tests/data/basic".into());
 const REMOTE_DIR: &str = "/remote.php/dav/files/tester/test_folder";
 
 mod tag {
@@ -224,6 +224,7 @@ impl TestEnv {
             token: self.token.clone(),
             max_concurrent_requests: 100,
             tag_database: self.temp_dir.path().join("db.json"),
+            dry_run: false,
             ..Default::default()
         }
     }
@@ -401,7 +402,7 @@ async fn run_follow_up_sync_bidirectional() -> Result {
             {
               "prefixes": [
                 {
-                  "local": "/tmp/path/to/local/files/tests/data_basic",
+                  "local": "/tmp/path/to/local/files/tests/data/basic",
                   "remote": "/remote.php/dav/files/tester/test_folder"
                 }
               ],
@@ -456,5 +457,28 @@ async fn run_follow_up_sync_bidirectional() -> Result {
     env.assert_tags(FileLocation::Remote, &expected).await?;
     env.assert_tags(FileLocation::Local, &expected).await?;
 
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn sync_with_unmapped_files() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
+        .await;
+
+    let unsynced_dir: &Path = Path::new("tests/data/unsynced");
+    env.container.upload("/remote.php/dav/files/tester/unsynced", unsynced_dir).await?;
+
+    env.container
+        .tag("/remote.php/dav/files/tester/unsynced/single-file.txt", &(tag::SPACE.parse()?))
+        .await?;
+
+    let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+    initialized.sync().await?;
+
+    env.assert_snapshot("sync_with_unmapped_files", initialized.repository());
+    env.assert_tags(FileLocation::Remote, &[]).await?;
+    env.assert_tags(FileLocation::Local, &[]).await?;
     Ok(())
 }

@@ -198,7 +198,12 @@ impl FileSystem for RemoteFs {
                 .await;
         let mut repo = Repository::new(self.config.prefixes.clone());
         for (file, tags) in file_tag_helper.file_tags {
-            let synced_path = repo.insert_remote(Path::new(&file), tags);
+            let Ok(synced_path) = repo
+                .insert_remote(Path::new(&file), tags)
+                .inspect_err(|e| tracing::debug!("{e}"))
+            else {
+                continue;
+            };
             let Some(&id) = file_tag_helper.file_ids.get_by_right(&file) else {
                 warn!("Missing id for file {file}");
                 continue;

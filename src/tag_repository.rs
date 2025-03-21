@@ -10,7 +10,7 @@ use std::str::FromStr;
 
 use atomic_write_file::AtomicWriteFile;
 use serde::{Deserialize, Serialize};
-use snafu::{IntoError, ResultExt, Snafu, ensure};
+use snafu::{IntoError, OptionExt, ResultExt, Snafu, ensure};
 use tracing::error;
 
 use crate::newtype;
@@ -53,20 +53,20 @@ impl SyncedPath {
         self.prefix_id
     }
 
-    fn from_local(local: &Path, repo: &Repository) -> Self {
-        let (prefix_id, path) = repo.split_prefix(local, FileLocation::Local);
-        Self {
+    fn from_local(local: &Path, repo: &Repository) -> Result<Self, MissingPrefix> {
+        let (prefix_id, path) = repo.split_prefix(local, FileLocation::Local)?;
+        Ok(Self {
             prefix_id,
             path: path.to_owned(),
-        }
+        })
     }
 
-    fn from_remote(remote: &Path, repo: &Repository) -> Self {
-        let (prefix_id, path) = repo.split_prefix(remote, FileLocation::Remote);
-        Self {
+    fn from_remote(remote: &Path, repo: &Repository) -> Result<Self, MissingPrefix> {
+        let (prefix_id, path) = repo.split_prefix(remote, FileLocation::Remote)?;
+        Ok(Self {
             prefix_id,
             path: path.to_owned(),
-        }
+        })
     }
 }
 
@@ -383,6 +383,12 @@ impl PrefixMapping {
     pub const EXPECTED_PREFIX: &str = "/remote.php/dav/files/";
 }
 
+#[derive(Debug, Clone, Snafu)]
+#[snafu(display("Repo does not have a valid prefix for the given file {}", file.display()))]
+pub struct MissingPrefix {
+    file: PathBuf,
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Repository {
     prefixes: Vec<PrefixMapping>,
@@ -418,7 +424,7 @@ impl Repository {
         &self,
         file: &'a Path,
         location: FileLocation,
-    ) -> (PrefixMappingId, &'a Path) {
+    ) -> Result<(PrefixMappingId, &'a Path), MissingPrefix> {
         self.prefixes
             .iter()
             .enumerate()
@@ -431,18 +437,31 @@ impl Repository {
                     .map(|suffix| (PrefixMappingId(i), suffix))
                     .ok()
             })
-            .unwrap_or_else(|| panic!("missing prefix for {}", file.display()))
+            .with_context(|| MissingPrefixSnafu {
+                file: file.to_path_buf(),
+            })
     }
 
-    pub fn insert_local(&mut self, path: &Path, tags: Tags) {
-        let path = SyncedPath::from_local(path, self);
+    /// Add a file to the tag repository based on its local path.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the path does not have a valid prefix.
+    pub fn insert_local(&mut self, path: &Path, tags: Tags) -> Result<(), MissingPrefix> {
+        let path = SyncedPath::from_local(path, self)?;
         self.insert(path, tags);
+        Ok(())
     }
 
-    pub fn insert_remote(&mut self, path: &Path, tags: Tags) -> SyncedPath {
-        let path = SyncedPath::from_remote(path, self);
+    /// Add a file to the tag repository based on its remote path.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the path does not have a valid prefix.
+    pub fn insert_remote(&mut self, path: &Path, tags: Tags) -> Result<SyncedPath, MissingPrefix> {
+        let path = SyncedPath::from_remote(path, self)?;
         self.insert(path.clone(), tags);
-        path
+        Ok(path)
     }
 
     pub fn insert(&mut self, path: SyncedPath, tags: Tags) {

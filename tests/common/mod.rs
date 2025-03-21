@@ -203,18 +203,20 @@ async fn url(container: &ContainerAsync<NextcloudImage>) -> Result<Url> {
 
 struct GrowingSegments<'a> {
     input: &'a str,
-    index: usize,
+    output: &'a str,
     separator: char,
-    splits: std::str::Split<'a, char>,
 }
 
 impl<'a> GrowingSegments<'a> {
     pub fn new(input: &'a str, separator: char) -> Self {
         Self {
             input,
-            index: 0,
+            output: if input.starts_with(separator) {
+                &input[..separator.len_utf8()]
+            } else {
+                ""
+            },
             separator,
-            splits: input.split(separator),
         }
     }
 }
@@ -223,15 +225,23 @@ impl<'a> Iterator for GrowingSegments<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.input.starts_with(self.separator) && self.index == 0 {
-            self.splits.next();
+        if self.input == self.output {
+            return None;
         }
-        let next_split = self.splits.next()?;
-        self.index += self.separator.len_utf8();
-        self.index += next_split.len();
-
-        // Safety: index was determined with split and adding separators and thus in bounds and on UTF-8 boundary.
-        Some(unsafe { self.input.get_unchecked(..self.index) })
+        let returned_len = self.output.len();
+        let remainder = &self.input[returned_len..];
+        let next_separator = remainder.find(self.separator).map(|pos| pos + returned_len);
+        match next_separator {
+            Some(next_separator) => {
+                let result = &self.input[..next_separator];
+                self.output = &self.input[..(next_separator + self.separator.len_utf8())];
+                Some(result)
+            }
+            None => {
+                self.output = self.input;
+                Some(self.output)
+            }
+        }
     }
 }
 
@@ -247,5 +257,30 @@ mod tests {
         assert_eq!(Some("/remote.php/dav/files"), iter.next());
         assert_eq!(Some("/remote.php/dav/files/tester"), iter.next());
         assert_eq!(Some("/remote.php/dav/files/tester/asdf"), iter.next());
+    }
+
+    #[test]
+    fn single_word() {
+        let mut iter = GrowingSegments::new("single_word", '/');
+        assert_eq!(Some("single_word"), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn no_leading_separator() {
+        let mut iter = GrowingSegments::new("split/in/middle", '/');
+        assert_eq!(Some("split"), iter.next());
+        assert_eq!(Some("split/in"), iter.next());
+        assert_eq!(Some("split/in/middle"), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn multi_separator() {
+        let mut iter = GrowingSegments::new("/split//again", '/');
+        assert_eq!(Some("/split"), iter.next());
+        assert_eq!(Some("/split/"), iter.next());
+        assert_eq!(Some("/split//again"), iter.next());
+        assert_eq!(None, iter.next());
     }
 }

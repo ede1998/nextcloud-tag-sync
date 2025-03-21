@@ -14,7 +14,10 @@ pub struct LocalFsWalker<'a> {
 }
 
 impl<'a> LocalFsWalker<'a> {
-    #[expect(clippy::missing_const_for_fn, reason = "false positive, adding const leads to compiler error")]
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "false positive, adding const leads to compiler error"
+    )]
     #[must_use]
     pub fn new(config: &'a Config) -> Self {
         Self {
@@ -23,6 +26,11 @@ impl<'a> LocalFsWalker<'a> {
         }
     }
 
+    /// Builds a tag repository for the local file system.
+    ///
+    /// # Panics
+    ///
+    /// Panics if an unsynced file is encountered.
     pub fn build_repository(&self) -> Repository {
         let mut repo = Repository::new(self.prefixes.into());
         for prefix in self.prefixes {
@@ -37,7 +45,8 @@ impl<'a> LocalFsWalker<'a> {
                         if tags.is_empty() {
                             debug!("skipping file: {}", path.display());
                         } else {
-                            repo.insert_local(&path, tags);
+                            repo.insert_local(&path, tags)
+                                .expect("Unsynced file encountered during repo build.");
                         }
                     }
                     Err(FileError::IsDirectory { .. }) => {}

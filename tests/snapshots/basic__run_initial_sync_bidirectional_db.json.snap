@@ -1,12 +1,12 @@
 ---
 source: tests/basic.rs
-assertion_line: 211
+assertion_line: 252
 expression: db
 ---
 {
   "prefixes": [
     {
-      "local": "/tmp/path/to/local/files/tests/data_basic",
+      "local": "/tmp/path/to/local/files/tests/data/basic",
       "remote": "/remote.php/dav/files/tester/test_folder"
     }
   ],

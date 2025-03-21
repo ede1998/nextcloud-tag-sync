@@ -19,6 +19,7 @@ impl Default for Config {
     }
 }
 
+#[expect(clippy::result_large_err, reason = "only called once")]
 fn main() -> figment::error::Result<()> {
     let config: Config = Figment::from(Serialized::defaults(Config::default()))
         .merge(Toml::file("App.toml"))

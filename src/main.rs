@@ -27,7 +27,7 @@ async fn main() -> Result<(), Whatever> {
     initialized
         .sync()
         .await
-        .whatever_context("failed to sync local to remote")?;
+        .whatever_context("failed to sync between local and remote")?;
     initialized
         .persist_repository()
         .whatever_context("failed to persist repository")?;

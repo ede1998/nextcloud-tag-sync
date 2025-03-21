@@ -27,6 +27,11 @@ impl Connection {
         }
     }
 
+    /// Executes an HTTP request on the connection.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the request failed.
     pub async fn request<T>(&self, request: T) -> Result<T::Output, RequestError<T::Error>>
     where
         T: Request + Parse + Send,

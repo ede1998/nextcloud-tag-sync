@@ -38,10 +38,14 @@ impl Uninitialized {
 
         let (local_actions, remote_actions) = in_memory_patch(&mut initial_repo, &local, &remote);
 
-        futures::join!(
-            self.local_fs.update_tags(local_actions),
-            self.remote_fs.update_tags(remote_actions)
-        );
+        if self.config.dry_run {
+            tracing::info!("Skipping tag sync because of dry-run");
+        } else {
+            futures::join!(
+                self.local_fs.update_tags(local_actions),
+                self.remote_fs.update_tags(remote_actions)
+            );
+        }
 
         Ok(Initialized {
             repo: initial_repo,
@@ -119,10 +123,14 @@ impl Initialized {
 
         let (local_actions, remote_actions) = in_memory_patch(&mut self.repo, &local, &remote);
 
-        futures::join!(
-            self.local_fs.update_tags(local_actions),
-            self.remote_fs.update_tags(remote_actions)
-        );
+        if self.config.dry_run {
+            tracing::info!("Skipping tag sync because of dry-run");
+        } else {
+            futures::join!(
+                self.local_fs.update_tags(local_actions),
+                self.remote_fs.update_tags(remote_actions)
+            );
+        }
 
         Ok(())
     }
@@ -133,6 +141,10 @@ impl Initialized {
     ///
     /// This function will return an error if persisting failed.
     pub fn persist_repository(&self) -> Result<(), PersistingError> {
+        if self.config.dry_run {
+            tracing::info!("Not saving data because of dry-run");
+            return Ok(());
+        }
         self.repo.persist_on_disk(&self.config.tag_database)
     }
 }

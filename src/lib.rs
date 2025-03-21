@@ -4,6 +4,7 @@
     clippy::future_not_send,
     reason = "bimap's Iter type is (probably) incorrectly not marked Send + Sync which in turn affects the futures"
 )]
+#![allow(clippy::missing_const_for_fn, reason = "Too much nagging and many false positives")]
 
 mod commands;
 mod config;
@@ -31,7 +32,7 @@ pub use tag_repository::{FileLocation, PrefixMapping, Repository, Side, Tag, Tag
 
 pub use updater::{InitError, Initialized, Uninitialized, in_memory_patch};
 
-#[allow(
+#[expect(
     async_fn_in_trait,
     reason = "Implementations don't return Send+Sync futures anyway due to limitation in bimap"
 )]

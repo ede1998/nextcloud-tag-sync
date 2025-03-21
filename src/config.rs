@@ -19,6 +19,7 @@ pub struct Config {
     pub token: String,
     pub local_tag_property_name: String,
     pub tag_database: std::path::PathBuf,
+    pub dry_run: bool,
 }
 
 impl std::fmt::Debug for Config {
@@ -32,6 +33,7 @@ impl std::fmt::Debug for Config {
             .field("token", &"EXPUNGED")
             .field("local_tag_property_name", &self.local_tag_property_name)
             .field("tag_database", &self.tag_database)
+            .field("dry_run", &self.dry_run)
             .finish()
     }
 }
@@ -57,6 +59,7 @@ impl std::fmt::Display for Config {
             "Nextcloud token: ...{}",
             take_last_n_chars(&self.token, 3)
         )?;
+        writeln!(f, "Dry-Run: {}", self.dry_run)?;
         writeln!(f, "Mapped prefixes:")?;
         for prefix in &self.prefixes {
             writeln!(f, "Local:  {}", prefix.local().display())?;
@@ -80,6 +83,7 @@ impl Default for Config {
             token: "missing_token".to_owned(),
             local_tag_property_name: "user.xdg.tags".to_owned(),
             tag_database: PathBuf::from("nextcloud-tag-sync.db.json"),
+            dry_run: true,
         }
     }
 }
@@ -90,7 +94,8 @@ impl Default for Config {
 ///
 /// This function will return an error if configuration loading encounters invalid values or
 /// fails to load the configuration files.
-pub fn load_config() -> Result<Config, figment::Error> {
+#[expect(clippy::result_large_err, reason = "Only called once")]
+pub fn load_config() -> figment::error::Result<Config> {
     Figment::from(Serialized::defaults(Config::default()))
         .merge(Toml::file("config.toml"))
         .merge(Env::prefixed("NCTS_"))

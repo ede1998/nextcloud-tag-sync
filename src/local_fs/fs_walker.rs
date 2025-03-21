@@ -14,6 +14,7 @@ pub struct LocalFsWalker<'a> {
 }
 
 impl<'a> LocalFsWalker<'a> {
+    #[expect(clippy::missing_const_for_fn, reason = "false positive, adding const leads to compiler error")]
     #[must_use]
     pub fn new(config: &'a Config) -> Self {
         Self {

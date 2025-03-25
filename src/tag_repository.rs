@@ -534,6 +534,33 @@ impl Repository {
         let repo = serde_json::from_str(&data).with_context(|_| DeserializationSnafu { path })?;
         Ok(repo)
     }
+
+    #[must_use]
+    pub fn stats(&self) -> Statistics {
+        use itertools::Itertools;
+
+        fn widen(num: usize) -> u64 {
+            num.try_into().expect("num must be less than u64::MAX")
+        }
+
+        let files = widen(self.files.len());
+        let tags = self.files.values().map(|t| widen(t.len())).sum();
+        let distinct_tags = widen(self.files.values().flat_map(|t| &t.0).unique().count());
+        let max_tags_on_single_file = widen(
+            self.files
+                .values()
+                .map(|t| t.len())
+                .max()
+                .unwrap_or_default(),
+        );
+
+        Statistics {
+            files,
+            tags,
+            distinct_tags,
+            max_tags_on_single_file,
+        }
+    }
 }
 
 #[derive(Snafu, Debug)]
@@ -662,6 +689,29 @@ pub enum Side {
     Left,
     Right,
     Both,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Statistics {
+    pub files: u64,
+    pub tags: u64,
+    pub distinct_tags: u64,
+    pub max_tags_on_single_file: u64,
+}
+
+impl std::fmt::Display for Statistics {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let Self {
+            files,
+            tags,
+            distinct_tags,
+            max_tags_on_single_file,
+        } = self;
+        write!(
+            f,
+            "Statistics:\nFiles: {files} (most tags on single file = {max_tags_on_single_file})\nTags: {tags} (distinct = {distinct_tags})"
+        )
+    }
 }
 
 #[cfg(test)]

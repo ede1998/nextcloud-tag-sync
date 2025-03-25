@@ -84,7 +84,7 @@ impl std::fmt::Display for CommandsFormatter<'_> {
 }
 
 #[derive(Default)]
-struct ActionsFormatter<'a>(&'a [TagAction]);
+pub struct ActionsFormatter<'a>(pub &'a [TagAction]);
 
 impl std::fmt::Display for ActionsFormatter<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

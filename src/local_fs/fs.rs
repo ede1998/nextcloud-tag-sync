@@ -9,8 +9,8 @@ use tokio::task::JoinError;
 use tracing::{debug, error};
 
 use crate::{
-    Command, Config, FileSystem, IntoOk, Modification, PrefixMapping, TagAction, Tags,
-    updater::LocalSnafu,
+    ActionsFormatter, Command, Config, FileSystem, IntoOk, Modification, PrefixMapping, TagAction,
+    Tags, updater::LocalSnafu,
 };
 
 use super::LocalFsWalker;
@@ -44,17 +44,21 @@ impl FileSystem for LocalFs {
         I: IntoIterator<Item = Command> + Send,
     {
         for cmd in commands {
-            let path = cmd.path.clone();
+            let saved_cmd = cmd.clone();
             match run_command(
                 cmd,
                 &self.config.local_tag_property_name,
                 &self.config.prefixes,
             ) {
                 Ok(()) => {
-                    debug!("Successfully updated tags for file {path}");
+                    debug!(
+                        "Successfully updated tags for file {}: {}",
+                        saved_cmd.path,
+                        ActionsFormatter(saved_cmd.actions.as_slice())
+                    );
                 }
                 Err(e) => {
-                    error!("Failed to update tags for file {path}: {e}");
+                    error!("Failed to update tags for file {}: {e}", saved_cmd.path);
                 }
             }
         }
@@ -92,6 +96,7 @@ fn run_command(
 /// - any tag is invalid
 /// - the path is not a file
 pub fn get_tags_of_file(path: &Path, tag_property_name: &str) -> Result<Tags, FileError> {
+    ensure!(path.exists(), DoesNotExistSnafu { path });
     ensure!(path.is_file(), IsDirectorySnafu { path });
 
     debug!("reading tags of file {}", path.display());
@@ -109,6 +114,8 @@ pub fn get_tags_of_file(path: &Path, tag_property_name: &str) -> Result<Tags, Fi
 pub enum FileError {
     #[snafu(display("path {} is a directory", path.display()))]
     IsDirectory { path: PathBuf },
+    #[snafu(display("path {} does not exist", path.display()))]
+    DoesNotExist { path: PathBuf },
     #[snafu(display("could not get/set extended file attributes of {}: {source}", path.display()))]
     XAttr {
         path: PathBuf,

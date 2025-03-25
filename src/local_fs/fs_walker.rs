@@ -43,7 +43,7 @@ impl<'a> LocalFsWalker<'a> {
                 match get_tags_of_file(&path, self.tag_property_name) {
                     Ok(tags) => {
                         if tags.is_empty() {
-                            debug!("skipping file: {}", path.display());
+                            debug!("Ignoring untagged file: {}", path.display());
                         } else {
                             repo.insert_local(&path, tags)
                                 .expect("Unsynced file encountered during repo build.");
@@ -54,6 +54,8 @@ impl<'a> LocalFsWalker<'a> {
                 }
             }
         }
+
+        tracing::info!("Finished building local repo. {}", repo.stats());
 
         repo
     }

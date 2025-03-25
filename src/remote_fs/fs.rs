@@ -200,7 +200,7 @@ impl FileSystem for RemoteFs {
         for (file, tags) in file_tag_helper.file_tags {
             let Ok(synced_path) = repo
                 .insert_remote(Path::new(&file), tags)
-                .inspect_err(|e| tracing::debug!("{e}"))
+                .inspect_err(|e| tracing::debug!("Ignoring: {e}"))
             else {
                 continue;
             };
@@ -210,6 +210,8 @@ impl FileSystem for RemoteFs {
             };
             self.files.insert(id, synced_path);
         }
+
+        tracing::info!("Finished building remote repo. {}", repo.stats());
 
         Ok(repo)
     }

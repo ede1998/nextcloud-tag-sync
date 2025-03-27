@@ -1,14 +1,18 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
+use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::io::Write;
 use std::iter::Peekable;
 use std::ops::Deref;
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use atomic_write_file::AtomicWriteFile;
+use percent_encoding::{AsciiSet, NON_ALPHANUMERIC};
 use serde::{Deserialize, Serialize};
 use snafu::{IntoError, OptionExt, ResultExt, Snafu, ensure};
 use tracing::error;
@@ -16,6 +20,15 @@ use tracing::error;
 use crate::newtype;
 
 newtype!(PrefixMappingId, usize);
+
+pub const FILE_PATH_ENCODING_SET: AsciiSet = NON_ALPHANUMERIC
+    .remove(b'/')
+    .remove(b'(')
+    .remove(b')')
+    .remove(b'-')
+    .remove(b'.')
+    .remove(b'-')
+    .remove(b'_');
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SyncedPath {
@@ -40,7 +53,12 @@ impl SyncedPath {
 
     #[must_use]
     pub fn remote_file(&self, prefixes: &[PrefixMapping]) -> PathBuf {
-        prefixes[self.prefix_id.0].remote.join(&self.path)
+        let path = prefixes[self.prefix_id.0].remote.join(&self.path);
+        percent_encoding::percent_encode(
+            path.as_os_str().as_encoded_bytes(),
+            &FILE_PATH_ENCODING_SET,
+        )
+        .collect()
     }
 
     #[must_use]
@@ -62,6 +80,10 @@ impl SyncedPath {
     }
 
     fn from_remote(remote: &Path, repo: &Repository) -> Result<Self, MissingPrefix> {
+        let binding = Cow::from(percent_encoding::percent_decode(
+            remote.as_os_str().as_encoded_bytes(),
+        ));
+        let remote = OsStr::from_bytes(&binding).as_ref();
         let (prefix_id, path) = repo.split_prefix(remote, FileLocation::Remote)?;
         Ok(Self {
             prefix_id,

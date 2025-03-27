@@ -1047,6 +1047,7 @@ dependencies = [
  "futures",
  "itertools",
  "notify",
+ "percent-encoding",
  "quick-xml",
  "reqwest",
  "serde",

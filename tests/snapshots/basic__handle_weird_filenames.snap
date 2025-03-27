@@ -1,0 +1,33 @@
+---
+source: tests/basic.rs
+assertion_line: 256
+expression: repo
+---
+prefixes:
+  - local: /tmp/path/to/local/files
+    remote: /remote.php/dav/files/tester/test_folder
+files:
+  "0:has spaces.txt":
+    - more-tags please
+  "0:has umlautsäÄüÜöÖß.txt":
+    - more-tags please
+  "0:has!bang.txt":
+    - more-tags please
+  "0:has\"quote.txt":
+    - more-tags please
+  "0:has#tag.txt":
+    - more-tags please
+  "0:has%percentage.txt":
+    - more-tags please
+  "0:has'single'quote.txt":
+    - more-tags please
+  "0:has+plus.txt":
+    - more-tags please
+  "0:has,comma.txt":
+    - more-tags please
+  "0:has:colon.txt":
+    - more-tags please
+  "0:has;semi;colon.txt":
+    - more-tags please
+  "0:has?question?mark.txt":
+    - more-tags please

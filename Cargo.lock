@@ -1366,6 +1366,7 @@ dependencies = [
  "insta",
  "itertools",
  "notify",
+ "percent-encoding",
  "quick-xml",
  "reqwest",
  "serde",

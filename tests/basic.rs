@@ -69,6 +69,25 @@ mod data_basic {
     }
 }
 
+#[allow(
+    dead_code,
+    reason = "Exact replica of the example data directory structure"
+)]
+mod data_weird {
+    pub const BANG: &str = "has!bang.txt";
+    pub const COLON: &str = "has:colon.txt";
+    pub const COMMA: &str = "has,comma.txt";
+    pub const PERCENTAGE: &str = "has%percentage.txt";
+    pub const PLUS: &str = "has+plus.txt";
+    pub const QUESTION_MARK: &str = "has?question?mark.txt";
+    pub const QUOTE: &str = r#"has"quote.txt"#;
+    pub const SEMICOLON: &str = "has;semi;colon.txt";
+    pub const SINGLE_QUOTE: &str = "has'single'quote.txt";
+    pub const SPACE: &str = "has spaces.txt";
+    pub const TAG: &str = "has#tag.txt";
+    pub const UMLAUTS: &str = "has umlautsäÄüÜöÖß.txt";
+}
+
 fn path_to_str(p: &Path) -> &str {
     p.as_os_str().to_str().expect("non-UTF8 path")
 }
@@ -468,10 +487,15 @@ async fn sync_with_unmapped_files() -> Result {
         .await;
 
     let unsynced_dir: &Path = Path::new("tests/data/unsynced");
-    env.container.upload("/remote.php/dav/files/tester/unsynced", unsynced_dir).await?;
+    env.container
+        .upload("/remote.php/dav/files/tester/unsynced", unsynced_dir)
+        .await?;
 
     env.container
-        .tag("/remote.php/dav/files/tester/unsynced/single-file.txt", &(tag::SPACE.parse()?))
+        .tag(
+            "/remote.php/dav/files/tester/unsynced/single-file.txt",
+            &(tag::SPACE.parse()?),
+        )
         .await?;
 
     let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
@@ -480,5 +504,52 @@ async fn sync_with_unmapped_files() -> Result {
     env.assert_snapshot("sync_with_unmapped_files", initialized.repository());
     env.assert_tags(FileLocation::Remote, &[]).await?;
     env.assert_tags(FileLocation::Local, &[]).await?;
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn handle_weird_filenames() -> Result {
+    static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("tests/data/weird"));
+    const REMOTE_DIR: &str = "/remote.php/dav/files/tester/test_folder";
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix(&LOCAL_DIR, REMOTE_DIR)
+        .await;
+
+    env.tag_remote(data_weird::BANG, tag::SPACE).await?;
+    env.tag_remote(data_weird::COLON, tag::SPACE).await?;
+    env.tag_remote(data_weird::COMMA, tag::SPACE).await?;
+    env.tag_remote(data_weird::PERCENTAGE, tag::SPACE).await?;
+    env.tag_remote(data_weird::PLUS, tag::SPACE).await?;
+    env.tag_remote(data_weird::QUESTION_MARK, tag::SPACE)
+        .await?;
+    env.tag_remote(data_weird::QUOTE, tag::SPACE).await?;
+    env.tag_remote(data_weird::SEMICOLON, tag::SPACE).await?;
+    env.tag_remote(data_weird::SINGLE_QUOTE, tag::SPACE).await?;
+    env.tag_remote(data_weird::SPACE, tag::SPACE).await?;
+    env.tag_remote(data_weird::TAG, tag::SPACE).await?;
+    env.tag_remote(data_weird::UMLAUTS, tag::SPACE).await?;
+
+    let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+    initialized.sync().await?;
+
+    env.assert_snapshot("handle_weird_filenames", initialized.repository());
+    let expected = [
+        (data_weird::BANG, Some(tag::SPACE_TAG.clone())),
+        (data_weird::COLON, Some(tag::SPACE_TAG.clone())),
+        (data_weird::COMMA, Some(tag::SPACE_TAG.clone())),
+        (data_weird::PERCENTAGE, Some(tag::SPACE_TAG.clone())),
+        (data_weird::PLUS, Some(tag::SPACE_TAG.clone())),
+        (data_weird::QUESTION_MARK, Some(tag::SPACE_TAG.clone())),
+        (data_weird::QUOTE, Some(tag::SPACE_TAG.clone())),
+        (data_weird::SEMICOLON, Some(tag::SPACE_TAG.clone())),
+        (data_weird::SINGLE_QUOTE, Some(tag::SPACE_TAG.clone())),
+        (data_weird::SPACE, Some(tag::SPACE_TAG.clone())),
+        (data_weird::TAG, Some(tag::SPACE_TAG.clone())),
+        (data_weird::UMLAUTS, Some(tag::SPACE_TAG.clone())),
+    ];
+    env.assert_tags(FileLocation::Remote, &expected).await?;
+    env.assert_tags(FileLocation::Local, &expected).await?;
+
     Ok(())
 }

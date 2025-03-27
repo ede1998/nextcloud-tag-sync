@@ -1,6 +1,6 @@
 use std::{borrow::Cow, num::ParseIntError, str::Utf8Error};
 
-use nextcloud_tag_sync::{Body, FileId, Parse, Request};
+use nextcloud_tag_sync::{Body, FileId, Parse, Request, FILE_PATH_ENCODING_SET};
 use reqwest::header::{HeaderMap, HeaderValue};
 use snafu::{OptionExt, ResultExt, Snafu};
 
@@ -11,9 +11,9 @@ pub struct UploadFile {
 
 impl UploadFile {
     #[must_use]
-    pub fn new(path: impl Into<String>, contents: Vec<u8>) -> Self {
+    pub fn new(path: &str, contents: Vec<u8>) -> Self {
         Self {
-            path: path.into(),
+            path: percent_encoding::utf8_percent_encode(path, &FILE_PATH_ENCODING_SET).collect(),
             contents,
         }
     }

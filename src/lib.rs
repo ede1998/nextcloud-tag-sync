@@ -15,7 +15,7 @@ mod tag_repository;
 mod updater;
 
 use helper::{IntoOk, newtype, take_last_n_chars};
-pub use tag_repository::SyncedPath;
+pub use tag_repository::{SyncedPath, FILE_PATH_ENCODING_SET};
 pub use helper::SyncedPathPrinter;
 
 pub use commands::*;

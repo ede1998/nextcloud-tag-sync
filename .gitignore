@@ -1,7 +1,8 @@
-target
-/helper-scripts
-/sample-data
-/manual-testing/test_folder
-.vscode
-config.toml
 /.envrc
+/.vscode
+/config.toml
+/helper-scripts
+/nextcloud-tag-sync.db.json
+/result
+/sample-data
+/target

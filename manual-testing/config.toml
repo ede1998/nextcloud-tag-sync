@@ -1,0 +1,8 @@
+keep_side_on_conflict = "Both"
+nextcloud_instance = "http://localhost:8080"
+user = "tester"
+token = "password"
+
+[[prefixes]]
+local = "/home/erik/dev/rust/nextcloud-tag-sync/manual-testing/test_folder"
+remote = "/remote.php/dav/files/tester/test_folder"

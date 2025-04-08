@@ -161,8 +161,8 @@ pub fn in_memory_patch(
 
     let local_actions = resolve_diffs(remote.clone());
     let remote_actions = resolve_diffs(local.clone());
-    tracing::debug!("Remote actions: {}", CommandsFormatter(&remote_actions));
-    tracing::debug!("Local actions: {}", CommandsFormatter(&local_actions));
+    tracing::info!("Remote actions: {}", CommandsFormatter(&remote_actions));
+    tracing::info!("Local actions: {}", CommandsFormatter(&local_actions));
 
     let merged = merge_modifications([identical, local, remote]);
     original_repo.patch(merged);

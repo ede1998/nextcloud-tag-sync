@@ -1,6 +1,6 @@
 /.envrc
 /.vscode
-/config.toml
+/nextcloud-tag-sync.toml
 /helper-scripts
 /nextcloud-tag-sync.db.json
 /result

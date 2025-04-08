@@ -15,11 +15,6 @@ async fn main() -> Result<(), Whatever> {
     let config = Arc::new(load_config().whatever_context("failed to load config")?);
     info!("Starting with configuration: {config}");
 
-    ensure_whatever!(
-        config.nextcloud_instance.host() == Some(url::Host::Domain("localhost")),
-        "use docker nextcloud for test!"
-    );
-
     let mut initialized = Uninitialized::new(config)
         .initialize()
         .await

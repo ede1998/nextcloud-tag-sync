@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use figment::{
     Figment,
@@ -96,8 +96,14 @@ impl Default for Config {
 /// fails to load the configuration files.
 #[expect(clippy::result_large_err, reason = "Only called once")]
 pub fn load_config() -> figment::error::Result<Config> {
+    const FILE_NAME: &str = "nextcloud-tag-sync.toml";
+    let toml = Path::new(FILE_NAME)
+        .exists()
+        .then(|| Toml::file_exact(FILE_NAME))
+        .or_else(|| dirs::config_dir().map(|cfg| Toml::file_exact(cfg.join(FILE_NAME))))
+        .unwrap_or_else(|| Toml::file(FILE_NAME));
     Figment::from(Serialized::defaults(Config::default()))
-        .merge(Toml::file("config.toml"))
+        .merge(toml)
         .merge(Env::prefixed("NCTS_"))
         .extract()
 }

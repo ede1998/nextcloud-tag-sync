@@ -36,18 +36,33 @@
           overlays = [ inputs.rust-overlay.overlays.default ];
         }
       );
+
+      selectRustToolchain =
+        system:
+        nixpkgsFor.${system}.rust-bin.selectLatestNightlyWith (
+          toolchain:
+          toolchain.default.override {
+            extensions = [
+              "rust-src"
+              "rust-analyzer"
+            ];
+          }
+        );
     in
     {
-      homeManagerModules.nextcloud-tag-sync =
-        { ... }:
-        {
-          imports = [ ./modules ];
-        };
+      homeManagerModules = {
+        default = self.homeManagerModules.nextcloud-tag-sync;
+        nextcloud-tag-sync = import ./home-manager-module self;
+      };
 
       packages = forAllSystems (
         system:
         let
-          naersk' = nixpkgsFor.${system}.callPackage inputs.naersk { };
+          rust-toolchain = selectRustToolchain system;
+          naersk' = nixpkgsFor.${system}.callPackage inputs.naersk {
+            cargo = rust-toolchain;
+            rustc = rust-toolchain;
+          };
           nextcloud-tag-sync = naersk'.buildPackage {
             src = ./.;
           };
@@ -72,15 +87,7 @@
             nixfmt-rfc-style
             openssl
             pkg-config
-            (rust-bin.selectLatestNightlyWith (
-              toolchain:
-              toolchain.default.override {
-                extensions = [
-                  "rust-src"
-                  "rust-analyzer"
-                ];
-              }
-            ))
+            (selectRustToolchain system)
           ];
         };
       });

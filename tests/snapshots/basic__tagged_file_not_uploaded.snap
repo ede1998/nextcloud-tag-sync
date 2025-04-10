@@ -1,0 +1,10 @@
+---
+source: tests/basic.rs
+assertion_line: 274
+expression: repo
+---
+prefixes:
+  - local: /tmp/path/to/local/files
+    remote: /remote.php/dav/files/tester/test_folder
+files:
+  "0:single-file.txt": []

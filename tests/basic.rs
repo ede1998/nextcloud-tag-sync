@@ -16,6 +16,7 @@ use url::Url;
 use walkdir::WalkDir;
 
 static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| "tests/data/basic".into());
+static UNSYNCED_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("tests/data/unsynced"));
 const REMOTE_DIR: &str = "/remote.php/dav/files/tester/test_folder";
 
 mod tag {
@@ -86,6 +87,10 @@ mod data_weird {
     pub const SPACE: &str = "has spaces.txt";
     pub const TAG: &str = "has#tag.txt";
     pub const UMLAUTS: &str = "has umlautsäÄüÜöÖß.txt";
+}
+
+mod data_unsynced {
+    pub const SINGLE_FILE: &str = "single-file.txt";
 }
 
 fn path_to_str(p: &Path) -> &str {
@@ -179,7 +184,16 @@ impl TestEnv {
         self.container.file_tags(&file).await
     }
 
-    pub async fn with_prefix(mut self, local: &Path, remote: impl Into<PathBuf>) -> Self {
+    pub fn with_prefix_no_auto_upload(mut self, local: &Path, remote: impl Into<PathBuf>) -> Self {
+        let local_test_dir = self.temp_dir.path().join(local);
+        let mapping = PrefixMapping::new(local_test_dir, remote.into()).expect("invalid mapping");
+
+        self.prefixes.push(mapping);
+
+        self
+    }
+
+    pub async fn isolate_dir(&self, local: &Path) {
         async fn copy_recursive(source_directory: &Path, target_directory: &Path) -> Result<()> {
             for entry in WalkDir::new(source_directory) {
                 let entry = entry?;
@@ -203,9 +217,13 @@ impl TestEnv {
             "Copied local directory to temporary location {:?}",
             self.temp_dir
         );
+    }
 
+    pub async fn with_prefix(mut self, local: &Path, remote: impl Into<PathBuf>) -> Self {
         let local_test_dir = self.temp_dir.path().join(local);
         let mapping = PrefixMapping::new(local_test_dir, remote.into()).expect("invalid mapping");
+
+        self.isolate_dir(local).await;
 
         self.container
             .upload(path_to_str(mapping.remote()), mapping.local())
@@ -486,14 +504,16 @@ async fn sync_with_unmapped_files() -> Result {
         .with_prefix(&LOCAL_DIR, REMOTE_DIR)
         .await;
 
-    let unsynced_dir: &Path = Path::new("tests/data/unsynced");
     env.container
-        .upload("/remote.php/dav/files/tester/unsynced", unsynced_dir)
+        .upload("/remote.php/dav/files/tester/unsynced", &UNSYNCED_DIR)
         .await?;
 
     env.container
         .tag(
-            "/remote.php/dav/files/tester/unsynced/single-file.txt",
+            &format!(
+                "/remote.php/dav/files/tester/unsynced/{}",
+                data_unsynced::SINGLE_FILE
+            ),
             &(tag::SPACE.parse()?),
         )
         .await?;
@@ -508,9 +528,51 @@ async fn sync_with_unmapped_files() -> Result {
 }
 
 #[test(tokio::test)]
+async fn tagged_file_not_downloaded() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix_no_auto_upload(&UNSYNCED_DIR, REMOTE_DIR);
+
+    env.container.upload(REMOTE_DIR, &UNSYNCED_DIR).await?;
+    env.tag_remote(data_unsynced::SINGLE_FILE, tag::RED).await?;
+
+    let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+    initialized.sync().await?;
+
+    env.assert_snapshot("tagged_file_not_downloaded", initialized.repository());
+    env.assert_tags(
+        FileLocation::Remote,
+        &[(data_unsynced::SINGLE_FILE, Some(tag::RED_TAG.clone()))],
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[test(tokio::test)]
+async fn tagged_file_not_uploaded() -> Result {
+    let mut env = TestEnv::new()
+        .await
+        .with_prefix_no_auto_upload(&UNSYNCED_DIR, REMOTE_DIR);
+    env.isolate_dir(&UNSYNCED_DIR).await;
+    env.tag_local(data_unsynced::SINGLE_FILE, tag::RED)?;
+
+    let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+    initialized.sync().await?;
+
+    env.assert_snapshot("tagged_file_not_uploaded", initialized.repository());
+    env.assert_tags(
+        FileLocation::Local,
+        &[(data_unsynced::SINGLE_FILE, Some(tag::RED_TAG.clone()))],
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[test(tokio::test)]
 async fn handle_weird_filenames() -> Result {
     static LOCAL_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from("tests/data/weird"));
-    const REMOTE_DIR: &str = "/remote.php/dav/files/tester/test_folder";
     let mut env = TestEnv::new()
         .await
         .with_prefix(&LOCAL_DIR, REMOTE_DIR)

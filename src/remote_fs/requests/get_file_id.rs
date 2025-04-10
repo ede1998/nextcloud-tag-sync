@@ -6,12 +6,16 @@ use reqwest::header::HeaderMap;
 
 use crate::FileId;
 
-use super::{Body, DeserializeError, Parse, Request, parse, str_to_method};
+use super::{AskamaTemplate, Body, DeserializeError, Parse, Request, parse, str_to_method};
 
 #[derive(Template)]
 #[template(path = "get_file_id.xml")]
 pub struct GetFileId {
     path: String,
+}
+
+impl AskamaTemplate for GetFileId {
+    const MIME_TYPE: &str = "application/xml";
 }
 
 impl GetFileId {

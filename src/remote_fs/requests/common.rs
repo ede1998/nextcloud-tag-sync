@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use askama::Template;
 use reqwest::header::{CONTENT_TYPE, HeaderMap};
 use snafu::{ResultExt, prelude::*};
 use tracing::{debug, error, info, trace};
@@ -153,6 +152,10 @@ pub trait Request {
     }
 }
 
+pub trait AskamaTemplate: askama::Template {
+    const MIME_TYPE: &str;
+}
+
 #[derive(Debug, Default)]
 pub enum Body {
     Askama {
@@ -164,7 +167,7 @@ pub enum Body {
     Empty,
 }
 
-impl<T: Template> From<&T> for Body {
+impl<T: AskamaTemplate> From<&T> for Body {
     fn from(value: &T) -> Self {
         Self::Askama {
             content: value.render(),

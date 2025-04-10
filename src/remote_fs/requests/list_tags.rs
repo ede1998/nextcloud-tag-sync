@@ -7,11 +7,17 @@ use reqwest::header::HeaderMap;
 
 use crate::{Tag, TagId};
 
-use super::{Body, DeserializeError, Parse, Request, empty_as_none, parse, str_to_method};
+use super::{
+    AskamaTemplate, Body, DeserializeError, Parse, Request, empty_as_none, parse, str_to_method,
+};
 
 #[derive(Template)]
 #[template(path = "load_tags.xml")]
 pub struct ListTags;
+
+impl AskamaTemplate for ListTags {
+    const MIME_TYPE: &str = "application/xml";
+}
 
 impl Request for ListTags {
     fn method(&self) -> reqwest::Method {

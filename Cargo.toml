@@ -9,34 +9,32 @@ edition = "2024"
 fuzzing = []
 
 [dependencies]
-askama = "0.12.1"
-atomic-write-file = "0.2.1"
+askama = "0.13.0"
+atomic-write-file = "0.2.3"
 atty = "0.2.14"
 bimap = "0.6.3"
 dirs = "6.0.0"
-figment = { version = "0.10.8", features = ["env", "toml"] }
-futures = "0.3.27"
+figment = { version = "0.10.19", features = ["env", "toml"] }
+futures = "0.3.31"
 itertools = "0.14.0"
-notify = "8.0.0"
 percent-encoding = "2.3.1"
-quick-xml = { version = "0.37.2", features = ["serialize", "async-tokio"] }
-reqwest = "0.12.3"
-serde = { version = "1.0.158", features = ["derive"] }
+quick-xml = { version = "0.37.4", features = ["serialize", "async-tokio"] }
+reqwest = "0.12.15"
+serde = { version = "1.0.219", features = ["derive"] }
 serde-query = "0.2.0"
-serde_json = "1.0.128"
-serde_path_to_error = "0.1.11"
-snafu = { version = "0.8.2", features = ["futures"] }
+serde_json = "1.0.140"
+serde_path_to_error = "0.1.17"
+snafu = { version = "0.8.5", features = ["futures"] }
 termtree = "0.5.1"
-tokio = { version = "1.26.0", features = ["full"] }
-tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
-url = { version = "2.3.1", features = ["serde"] }
-walkdir = "2.3.3"
-xattr = "1.0.0"
+tokio = { version = "1.44.2", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+url = { version = "2.5.4", features = ["serde"] }
+walkdir = "2.5.0"
+xattr = "1.5.0"
 
 [dev-dependencies]
-insta = { version = "1.40.0", features = ["redactions", "yaml"] }
-tempfile = "3.12.0"
-test-log = { version = "0.2.11", default-features = false, features = ["trace"] }
+insta = { version = "1.42.2", features = ["redactions", "yaml"] }
+tempfile = "3.19.1"
+test-log = { version = "0.2.17", default-features = false, features = ["trace"] }
 testcontainers = "0.23.3"
-# httptest?

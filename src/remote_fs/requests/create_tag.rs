@@ -6,12 +6,16 @@ use snafu::{OptionExt, ResultExt, Snafu};
 
 use crate::{Tag, TagId};
 
-use super::{Body, Parse, Request};
+use super::{AskamaTemplate, Body, Parse, Request};
 
 #[derive(Template)]
 #[template(path = "create_tag.json", escape = "none")]
 pub struct CreateTag {
     tag: Tag,
+}
+
+impl AskamaTemplate for CreateTag {
+    const MIME_TYPE: &str = "application/json";
 }
 
 impl CreateTag {

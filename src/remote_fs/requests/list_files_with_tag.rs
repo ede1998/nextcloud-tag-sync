@@ -6,13 +6,17 @@ use url::Url;
 
 use crate::{FileId, TagId};
 
-use super::{Body, DeserializeError, Parse, Request, common::str_to_method, parse};
+use super::{AskamaTemplate, Body, DeserializeError, Parse, Request, common::str_to_method, parse};
 
 /// List all files with the given tag. Directories are ignored.
 #[derive(Template)]
 #[template(path = "list_files_with_tag.xml")]
 pub struct ListFilesWithTag {
     tag: TagId,
+}
+
+impl AskamaTemplate for ListFilesWithTag {
+    const MIME_TYPE: &str = "application/xml";
 }
 
 impl ListFilesWithTag {

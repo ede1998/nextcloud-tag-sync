@@ -1,6 +1,6 @@
 use std::{borrow::Cow, num::ParseIntError, str::Utf8Error};
 
-use nextcloud_tag_sync::{Body, FileId, Parse, Request, FILE_PATH_ENCODING_SET};
+use nextcloud_tag_sync::{Body, FILE_PATH_ENCODING_SET, FileId, Parse, Request};
 use reqwest::header::{HeaderMap, HeaderValue};
 use snafu::{OptionExt, ResultExt, Snafu};
 

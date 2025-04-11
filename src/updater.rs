@@ -41,10 +41,11 @@ impl Uninitialized {
         if self.config.dry_run {
             tracing::info!("Skipping tag sync because of dry-run");
         } else {
-            futures::join!(
+            let fails = futures::join!(
                 self.local_fs.update_tags(local_actions),
                 self.remote_fs.update_tags(remote_actions)
             );
+            handle_failures(&mut initial_repo, fails);
         }
 
         Ok(Initialized {
@@ -126,10 +127,11 @@ impl Initialized {
         if self.config.dry_run {
             tracing::info!("Skipping tag sync because of dry-run");
         } else {
-            futures::join!(
+            let fails = futures::join!(
                 self.local_fs.update_tags(local_actions),
                 self.remote_fs.update_tags(remote_actions)
             );
+            handle_failures(&mut self.repo, fails);
         }
 
         Ok(())
@@ -168,6 +170,15 @@ pub fn in_memory_patch(
     original_repo.patch(merged);
 
     (local_actions, remote_actions)
+}
+
+fn handle_failures(repo: &mut Repository, fails: (Vec<Command>, Vec<Command>)) {
+    let (local, remote) = fails;
+    if !local.is_empty() || !remote.is_empty() {
+        tracing::info!("Rolling back local fails: {}", CommandsFormatter(&local));
+        tracing::info!("Rolling back remote fails: {}", CommandsFormatter(&remote));
+    }
+    repo.rollback_commands(local.into_iter().chain(remote));
 }
 
 fn merge_modifications(diffs: impl IntoIterator<Item = Vec<DiffResult>>) -> Vec<DiffResult> {

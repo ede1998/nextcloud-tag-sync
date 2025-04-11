@@ -51,7 +51,7 @@ impl RemoteFs {
                     warn!("Failed to create tag {tag}: {e}");
                 }
             })
-            .collect_into()
+            .collect()
             .await;
         self.tags.extend(new_tags);
     }
@@ -121,19 +121,21 @@ impl RemoteFs {
                     warn!("failed to query file id for {path}: {e}");
                 }
             })
-            .collect_into()
+            .collect()
             .await;
         self.files.extend(new_files);
     }
 
-    async fn run_command(&self, cmd: Command, connection: &Connection) {
+    async fn run_command(&self, cmd: Command, connection: &Connection) -> Result<(), Command> {
         let path = &cmd.path;
 
         let Some(&file_id) = self.files.get_by_right(path) else {
             // We queried unknown file ids before. Can only land here if query failed.
             error!("Unknown file {path}. Ensure file is synced so it has an ID.");
-            return;
+            return Err(cmd);
         };
+
+        let mut failed_actions = Vec::new();
 
         for action in cmd.actions {
             let tag = &action.tag;
@@ -141,6 +143,7 @@ impl RemoteFs {
             let Some(&tag_id) = self.tags.get_by_right(&action.tag) else {
                 // We created unknown tags before. Can only land here if tag creation failed.
                 error!("Unknown tag {tag}. Failed to update tags for file {path}.");
+                failed_actions.push(action);
                 continue;
             };
 
@@ -167,8 +170,18 @@ impl RemoteFs {
                     // This can especially happen when a directory is tagged in Nextcloud as at least
                     // BTRFS does not support tagging directories.
                     error!("Failed to update tag {tag} for file {path}: {e}",);
+                    failed_actions.push(action);
                 }
             }
+        }
+
+        if failed_actions.is_empty() {
+            Ok(())
+        } else {
+            Err(Command {
+                path: path.clone(),
+                actions: failed_actions,
+            })
         }
     }
 }
@@ -194,7 +207,7 @@ impl FileSystem for RemoteFs {
                         }
                     },
                 )
-                .collect_into()
+                .collect()
                 .await;
         let mut repo = Repository::new(self.config.prefixes.clone());
         for (file, tags) in file_tag_helper.file_tags {
@@ -216,7 +229,7 @@ impl FileSystem for RemoteFs {
         Ok(repo)
     }
 
-    async fn update_tags<I>(&mut self, commands: I)
+    async fn update_tags<I>(&mut self, commands: I) -> Vec<Command>
     where
         I: IntoIterator<Item = Command> + Send,
     {
@@ -233,8 +246,8 @@ impl FileSystem for RemoteFs {
 
         LimitedConcurrency::new(commands, self.config.max_concurrent_requests)
             .transform(|cmd| self.run_command(cmd, &connection))
-            .execute()
-            .await;
+            .collect_err()
+            .await
     }
 }
 

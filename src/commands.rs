@@ -1,7 +1,4 @@
-use crate::{
-    SyncedPath, SyncedPathPrinter, Tag, Tags,
-    tag_repository::DiffResult,
-};
+use crate::{SyncedPath, SyncedPathPrinter, Tag, Tags, tag_repository::DiffResult};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub enum Modification {

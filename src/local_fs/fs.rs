@@ -39,29 +39,34 @@ impl FileSystem for LocalFs {
             .context(LocalSnafu)
     }
 
-    async fn update_tags<I>(&mut self, commands: I)
+    async fn update_tags<I>(&mut self, commands: I) -> Vec<Command>
     where
         I: IntoIterator<Item = Command> + Send,
     {
-        for cmd in commands {
-            let saved_cmd = cmd.clone();
-            match run_command(
-                cmd,
-                &self.config.local_tag_property_name,
-                &self.config.prefixes,
-            ) {
-                Ok(()) => {
-                    debug!(
-                        "Successfully updated tags for file {}: {}",
-                        saved_cmd.path,
-                        ActionsFormatter(saved_cmd.actions.as_slice())
-                    );
+        commands
+            .into_iter()
+            .filter_map(|cmd| {
+                let saved_cmd = cmd.clone();
+                match run_command(
+                    cmd,
+                    &self.config.local_tag_property_name,
+                    &self.config.prefixes,
+                ) {
+                    Ok(()) => {
+                        debug!(
+                            "Successfully updated tags for file {}: {}",
+                            saved_cmd.path,
+                            ActionsFormatter(saved_cmd.actions.as_slice())
+                        );
+                        None
+                    }
+                    Err(e) => {
+                        error!("Failed to update tags for file {}: {e}", saved_cmd.path);
+                        Some(saved_cmd)
+                    }
                 }
-                Err(e) => {
-                    error!("Failed to update tags for file {}: {e}", saved_cmd.path);
-                }
-            }
-        }
+            })
+            .collect()
     }
 }
 

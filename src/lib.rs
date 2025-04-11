@@ -4,7 +4,10 @@
     clippy::future_not_send,
     reason = "bimap's Iter type is (probably) incorrectly not marked Send + Sync which in turn affects the futures"
 )]
-#![allow(clippy::missing_const_for_fn, reason = "Too much nagging and many false positives")]
+#![allow(
+    clippy::missing_const_for_fn,
+    reason = "Too much nagging and many false positives"
+)]
 
 mod commands;
 mod config;
@@ -14,9 +17,9 @@ mod remote_fs;
 mod tag_repository;
 mod updater;
 
-use helper::{IntoOk, newtype, take_last_n_chars};
-pub use tag_repository::{SyncedPath, FILE_PATH_ENCODING_SET};
 pub use helper::SyncedPathPrinter;
+use helper::{IntoOk, newtype, take_last_n_chars};
+pub use tag_repository::{FILE_PATH_ENCODING_SET, SyncedPath};
 
 pub use commands::*;
 pub use config::{Config, load_config};
@@ -38,7 +41,7 @@ pub use updater::{InitError, Initialized, Uninitialized, in_memory_patch};
 )]
 pub trait FileSystem {
     async fn create_repo(&mut self) -> Result<Repository, InitError>;
-    async fn update_tags<I>(&mut self, commands: I)
+    async fn update_tags<I>(&mut self, commands: I) -> Vec<Command>
     where
         I: IntoIterator<Item = Command> + Send;
 }

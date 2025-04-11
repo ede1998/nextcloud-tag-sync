@@ -36,23 +36,6 @@ pub struct TransformElements<Iter, EAction> {
 }
 
 impl<Iter, EAction> TransformElements<Iter, EAction> {
-    pub(crate) async fn execute<Fut>(self)
-    where
-        Iter: IntoIterator,
-        EAction: Fn(Iter::Item) -> Fut,
-        Fut: Future<Output = ()>,
-    {
-        use futures::StreamExt;
-
-        let async_drop = |()| std::future::ready(());
-
-        futures::stream::iter(self.base.elements)
-            .map(self.element_action)
-            .buffer_unordered(self.base.max_concurrent_requests)
-            .for_each(async_drop)
-            .await;
-    }
-
     pub(crate) const fn aggregate<AAction>(
         self,
         aggregate_action: AAction,
@@ -62,6 +45,22 @@ impl<Iter, EAction> TransformElements<Iter, EAction> {
             aggregate_action,
         }
     }
+
+    pub(crate) async fn collect_err<Res, Fut>(self) -> Res
+    where
+        Res: Extend<Iter::Item> + Default,
+        Iter: IntoIterator,
+        EAction: Fn(Iter::Item) -> Fut,
+        Fut: Future<Output = Result<(), Iter::Item>>,
+    {
+        use futures::StreamExt;
+        futures::stream::iter(self.base.elements)
+            .map(self.element_action)
+            .buffer_unordered(self.base.max_concurrent_requests)
+            .filter_map(|item| futures::future::ready(item.err()))
+            .collect()
+            .await
+    }
 }
 
 pub struct AggregateElements<Iter, EAction, AAction> {
@@ -70,7 +69,7 @@ pub struct AggregateElements<Iter, EAction, AAction> {
 }
 
 impl<Iter, EAction, AAction> AggregateElements<Iter, EAction, AAction> {
-    pub(crate) async fn collect_into<Res, EFut>(self) -> Res
+    pub(crate) async fn collect<Res, EFut>(self) -> Res
     where
         Res: Default,
         AAction: Fn(&mut Res, EFut::Output),

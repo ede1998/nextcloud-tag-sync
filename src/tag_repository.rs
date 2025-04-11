@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use snafu::{IntoError, OptionExt, ResultExt, Snafu, ensure};
 use tracing::error;
 
-use crate::newtype;
+use crate::{Modification, newtype};
 
 newtype!(PrefixMappingId, usize);
 
@@ -290,6 +290,15 @@ impl IntoIterator for Tags {
     }
 }
 
+impl FromIterator<Tag> for Tags {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = Tag>,
+    {
+        Self(iter.into_iter().collect())
+    }
+}
+
 impl FromIterator<String> for Tags {
     fn from_iter<T>(iter: T) -> Self
     where
@@ -524,6 +533,35 @@ impl Repository {
                 old_tags, reconstructed_tags,
                 "Conflict while applying patch to tag repository: old_tags != reconstructed_tags"
             );
+        }
+    }
+
+    pub fn rollback_commands(&mut self, commands: impl IntoIterator<Item = crate::Command>) {
+        use std::collections::btree_map::Entry;
+        for cmd in commands {
+            match self.files.entry(cmd.path) {
+                Entry::Vacant(entry) => {
+                    let tags: Tags = cmd
+                        .actions
+                        .into_iter()
+                        .filter(|a| a.modification == Modification::Remove)
+                        .map(|a| a.tag)
+                        .collect();
+                    entry.insert(tags);
+                }
+                Entry::Occupied(mut entry) => {
+                    let tags = entry.get_mut();
+                    for action in cmd.actions {
+                        match action.modification {
+                            Modification::Add => tags.remove_one(&action.tag),
+                            Modification::Remove => tags.insert_one(action.tag),
+                        }
+                    }
+                    if tags.is_empty() {
+                        entry.remove();
+                    }
+                }
+            }
         }
     }
 

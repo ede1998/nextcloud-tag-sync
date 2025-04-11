@@ -529,6 +529,12 @@ impl Repository {
                 .files
                 .insert(path.clone(), result_tags.clone())
                 .unwrap_or_default();
+
+            if result_tags.is_empty() {
+                // File was deleted or lost all tags
+                self.files.remove(&path);
+            }
+
             assert_eq!(
                 old_tags, reconstructed_tags,
                 "Conflict while applying patch to tag repository: old_tags != reconstructed_tags"

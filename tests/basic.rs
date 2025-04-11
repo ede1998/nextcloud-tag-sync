@@ -615,3 +615,33 @@ async fn handle_weird_filenames() -> Result {
 
     Ok(())
 }
+
+#[test(tokio::test)]
+async fn clean_up_deleted_file() -> Result {
+    let env = TestEnv::new()
+        .await
+        .with_prefix_no_auto_upload(&UNSYNCED_DIR, REMOTE_DIR)
+        .with_db(
+            r#"
+            {
+              "prefixes": [
+                {
+                  "local": "/tmp/path/to/local/files/tests/data/unsynced",
+                  "remote": "/remote.php/dav/files/tester/test_folder"
+                }
+              ],
+              "files": {
+                "0:recently_deleted.txt": [
+                  "red"
+                ]
+              }
+            }"#,
+        )?;
+
+    let mut initialized = Uninitialized::new(env.arc_config()).initialize().await?;
+    initialized.sync().await?;
+
+    env.assert_snapshot("clean_up_deleted_file", initialized.repository());
+
+    Ok(())
+}

@@ -1,11 +1,9 @@
 use std::borrow::Cow;
-use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::io::Write;
-use std::iter::Peekable;
 use std::ops::Deref;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
@@ -511,7 +509,7 @@ impl Repository {
         other: &'collection Self,
     ) -> DiffIterator<'collection> {
         assert_eq!(self.prefixes, other.prefixes);
-        DiffIterator::new(self.files.iter(), other.files.iter())
+        DiffIterator::new(&self.files, &other.files)
     }
 
     /// Applies the given difference hunks to the repository.
@@ -667,80 +665,48 @@ pub enum FileLocation {
     Remote,
 }
 
-#[derive(Debug)]
 pub struct DiffIterator<'collection> {
-    left: Peekable<MapIter<'collection>>,
-    right: Peekable<MapIter<'collection>>,
+    inner: Box<dyn Iterator<Item = DiffResult> + 'collection>,
 }
 
 impl Iterator for DiffIterator<'_> {
     type Item = DiffResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let (left, right) = match (self.left.peek(), self.right.peek()) {
-                (None, None) => return None,
-                (None, Some(_)) => {
-                    return self.advance(Side::Right);
-                }
-                (Some(_), None) => {
-                    return self.advance(Side::Left);
-                }
-                (Some(l), Some(r)) => (&l.0, &r.0),
-            };
-            match left.cmp(right) {
-                Ordering::Less => {
-                    return self.advance(Side::Left);
-                }
-                Ordering::Greater => {
-                    return self.advance(Side::Right);
-                }
-                Ordering::Equal => {
-                    let next = self.advance(Side::Both);
-                    if next.is_some() {
-                        return next;
-                    }
-                }
-            }
-        }
+        self.inner.next()
     }
 }
 
-type MapIter<'collection> = std::collections::btree_map::Iter<'collection, SyncedPath, Tags>;
-
 impl<'collection> DiffIterator<'collection> {
-    pub fn new(left: MapIter<'collection>, right: MapIter<'collection>) -> Self {
+    pub fn new(
+        left: impl IntoIterator<Item = (&'collection SyncedPath, &'collection Tags)> + 'collection,
+        right: impl IntoIterator<Item = (&'collection SyncedPath, &'collection Tags)> + 'collection,
+    ) -> Self {
+        use itertools::Itertools;
+        let inner = right
+            .into_iter()
+            .merge_join_by(left, |l, r| l.0.cmp(r.0))
+            .filter_map(|joined| match joined {
+                itertools::EitherOrBoth::Both(l, r) => {
+                    let diff = r.1.diff(l.1);
+                    let is_different = !diff.left_only.is_empty() || !diff.right_only.is_empty();
+                    is_different.then(|| DiffResult {
+                        path: r.0.clone(),
+                        tags: diff,
+                    })
+                }
+                itertools::EitherOrBoth::Left(l) => Some(DiffResult {
+                    path: l.0.clone(),
+                    tags: Tags::new().diff(l.1),
+                }),
+                itertools::EitherOrBoth::Right(r) => Some(DiffResult {
+                    path: r.0.clone(),
+                    tags: r.1.diff(&Tags::new()),
+                }),
+            });
         Self {
-            left: left.peekable(),
-            right: right.peekable(),
+            inner: Box::new(inner),
         }
-    }
-
-    fn advance(&mut self, side: Side) -> Option<DiffResult> {
-        let (path, left_tags, right_tags) = match side {
-            Side::Left => {
-                let (path, left) = self.left.next()?;
-                (path, left, &Tags::new())
-            }
-            Side::Right => {
-                let (path, right) = self.right.next()?;
-                (path, &Tags::new(), right)
-            }
-            Side::Both => {
-                let (path, left) = self.left.next()?;
-                let (same_path, right) = self.right.next()?;
-                assert_eq!(path, same_path, "Path should be the same");
-                (path, left, right)
-            }
-        };
-
-        let diff = left_tags.diff(right_tags);
-        let is_different = !diff.left_only.is_empty() || !diff.right_only.is_empty();
-
-        is_different.then(|| DiffResult {
-            path: path.clone(),
-            tags: diff,
-        })
     }
 }
 

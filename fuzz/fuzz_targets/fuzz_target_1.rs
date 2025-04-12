@@ -74,6 +74,9 @@ fn repo(data: &ArbitraryFiles, kind: RepoKind) -> Repository {
     let mut repo = Repository::new(mapping);
     for file in &data.0 {
         let tags = merge_tags(&file.tags, kind);
+        if tags.is_empty() {
+            continue;
+        }
         let path = SyncedPath::new(0, &file.path);
         repo.insert(path, tags);
     }

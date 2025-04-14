@@ -748,6 +748,8 @@ impl std::fmt::Display for Statistics {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use super::*;
 
     type TaggedFile = (
@@ -843,11 +845,31 @@ mod tests {
         initial.patch(diffs);
         println!("{initial:?}");
         assert_eq!(initial.prefixes, prefixes);
-        for (actual, expected) in std::iter::zip(initial.files, files) {
+
+        let actual_vs_expected = reconcile_files(initial, files);
+
+        for (actual, expected) in actual_vs_expected {
             let (path, combined, _initial, modified) = expected;
             let tags = combined.into_iter().chain(modified).collect();
 
-            assert_eq!(actual.1, tags, "Failed for file {}", path.path.display());
+            assert_eq!(actual, tags, "Failed for file {}", path.path.display());
         }
+    }
+
+    fn reconcile_files(actual: Repository, expected: Vec<TaggedFile>) -> Vec<(Tags, TaggedFile)> {
+        actual
+            .files
+            .into_iter()
+            // full outer join
+            .merge_join_by(expected, |l, r| l.0.cmp(&r.0))
+            // add empty entries when missing
+            .map(|merged| match merged {
+                itertools::EitherOrBoth::Both(actual, expected) => (actual.1, expected),
+                itertools::EitherOrBoth::Left(actual) => {
+                    (actual.1, (actual.0, Vec::new(), Vec::new(), Vec::new()))
+                }
+                itertools::EitherOrBoth::Right(expected) => (Tags::new(), expected),
+            })
+            .collect()
     }
 }

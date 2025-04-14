@@ -52,11 +52,13 @@ impl SyncedPath {
     #[must_use]
     pub fn remote_file(&self, prefixes: &[PrefixMapping]) -> PathBuf {
         let path = prefixes[self.prefix_id.0].remote.join(&self.path);
-        percent_encoding::percent_encode(
-            path.as_os_str().as_encoded_bytes(),
-            &FILE_PATH_ENCODING_SET,
+        PathBuf::from(
+            percent_encoding::percent_encode(
+                path.as_os_str().as_encoded_bytes(),
+                &FILE_PATH_ENCODING_SET,
+            )
+            .to_string(),
         )
-        .collect()
     }
 
     #[must_use]
@@ -871,5 +873,26 @@ mod tests {
                 itertools::EitherOrBoth::Right(expected) => (Tags::new(), expected),
             })
             .collect()
+    }
+
+    #[test]
+    fn space_in_file_name() -> Result<(), snafu::Whatever> {
+        use snafu::ResultExt;
+        let prefix = PrefixMapping {
+            local: "".into(),
+            remote: "/remote/one".into(),
+        };
+        let repo = make_repo(vec![prefix], [], false);
+
+        let path = SyncedPath::from_remote(Path::new("/remote/one/dummy/pendeln%202024.md"), &repo)
+            .whatever_context("Missing prefix")?;
+
+        assert_eq!(path.relative(), Path::new("dummy/pendeln 2024.md"));
+
+        let extracted = path.remote_file(&repo.prefixes);
+
+        assert_eq!(extracted, Path::new("/remote/one/dummy/pendeln%202024.md"));
+
+        Ok(())
     }
 }

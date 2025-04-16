@@ -1,7 +1,7 @@
 #![feature(iter_intersperse)]
 #![no_main]
 
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, io::IsTerminal, path::PathBuf};
 
 use nextcloud_tag_sync::{
     Command, Modification, PrefixMapping, Repository, SyncedPath, SyncedPathPrinter, Tag,
@@ -14,7 +14,7 @@ use input::ArbitraryFiles;
 libfuzzer_sys::fuzz_target!(
     init: {
         tracing_subscriber::fmt()
-          .with_ansi(atty::is(atty::Stream::Stdout))
+          .with_ansi(std::io::stdout().is_terminal())
           .with_env_filter(EnvFilter::from_default_env())
           .init();
     },

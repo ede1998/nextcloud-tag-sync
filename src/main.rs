@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{io::IsTerminal, sync::Arc};
 
 use nextcloud_tag_sync::{Uninitialized, load_config};
 use snafu::{Whatever, prelude::*};
@@ -9,7 +9,7 @@ use tracing_subscriber::EnvFilter;
 #[snafu::report]
 async fn main() -> Result<(), Whatever> {
     tracing_subscriber::fmt()
-        .with_ansi(atty::is(atty::Stream::Stdout))
+        .with_ansi(std::io::stdout().is_terminal())
         .with_env_filter(EnvFilter::from_default_env())
         .init();
     let config = Arc::new(load_config().whatever_context("failed to load config")?);

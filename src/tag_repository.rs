@@ -237,7 +237,7 @@ impl FromStr for Tag {
         let invalid: Vec<_> = s
             .chars()
             .enumerate()
-            .filter(|(_, c)| !c.is_alphanumeric() && !"-–.' _".contains(*c))
+            .filter(|(_, c)| !c.is_alphanumeric() && !"()-–.' _".contains(*c))
             .collect();
 
         ensure!(invalid.is_empty(), InvalidCharactersSnafu { invalid });
@@ -894,5 +894,22 @@ mod tests {
         assert_eq!(extracted, Path::new("/remote/one/dummy/pendeln%202024.md"));
 
         Ok(())
+    }
+
+    #[test]
+    fn weird_tag_symbols() {
+        let tag_strings = [
+            "petting animal (not cat)",
+            "Castel Sant'Angelo",
+            "Mike O'Callaghan–Pat Tillman Memorial Bridge",
+            "Römerberg",
+            "St. Nikolai Memorial",
+            "黒いサロンの家 Casa del Salone Nero",
+        ];
+        for tag_string in tag_strings {
+            if let Err(e) = Tag::from_str(tag_string) {
+                panic!("Failed to parse valid tag {tag_string}: {e}");
+            }
+        }
     }
 }

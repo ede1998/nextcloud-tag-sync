@@ -50,8 +50,8 @@
         );
     in
     {
-      homeManagerModules = {
-        default = self.homeManagerModules.nextcloud-tag-sync;
+      homeModules = {
+        default = self.homeModules.nextcloud-tag-sync;
         nextcloud-tag-sync = import ./home-manager-module self;
       };
 
@@ -71,13 +71,6 @@
           default = nextcloud-tag-sync;
         }
       );
-
-      checks = forAllSystems (system: {
-        default = nixpkgsFor.${system}.callPackage ./test/basic.nix {
-          home-manager-module = inputs.home-manager.nixosModules.home-manager;
-          plasma-module = self.homeManagerModules.plasma-manager;
-        };
-      });
 
       devShells = forAllSystems (system: {
         default = nixpkgsFor.${system}.mkShell {

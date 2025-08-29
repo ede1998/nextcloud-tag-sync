@@ -27,7 +27,7 @@ snafu = { version = "0.8.5", features = ["futures"] }
 termtree = "0.5.1"
 tokio = { version = "1.44.2", features = ["full"] }
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 url = { version = "2.5.4", features = ["serde"] }
 walkdir = "2.5.0"
 xattr = "1.5.0"

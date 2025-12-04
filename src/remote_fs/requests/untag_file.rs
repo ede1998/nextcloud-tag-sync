@@ -22,7 +22,7 @@ impl Request for UntagFile {
         reqwest::Method::DELETE
     }
 
-    fn endpoint(&self) -> Cow<str> {
+    fn endpoint(&self) -> Cow<'_, str> {
         format!("systemtags-relations/files/{}/{}", self.file, self.tag).into()
     }
 }

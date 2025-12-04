@@ -31,7 +31,7 @@ impl Request for ListFilesWithTag {
         str_to_method("REPORT")
     }
 
-    fn endpoint(&self) -> Cow<str> {
+    fn endpoint(&self) -> Cow<'_, str> {
         "files".into()
     }
 

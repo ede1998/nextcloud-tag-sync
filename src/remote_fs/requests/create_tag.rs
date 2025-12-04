@@ -30,7 +30,7 @@ impl Request for CreateTag {
         reqwest::Method::POST
     }
 
-    fn endpoint(&self) -> Cow<str> {
+    fn endpoint(&self) -> Cow<'_, str> {
         "systemtags".into()
     }
 

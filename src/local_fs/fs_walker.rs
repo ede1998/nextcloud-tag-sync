@@ -69,7 +69,7 @@ fn get_path(entry: Result<walkdir::DirEntry, walkdir::Error>) -> Option<std::pat
                 );
             } else {
                 error!("Could not access path: {e}");
-                if e.path().map(Path::is_dir) == Some(true) {
+                if e.path().is_some_and(Path::is_dir) {
                     warn!("Ignoring all files in this subtree.");
                 }
             }

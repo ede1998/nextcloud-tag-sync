@@ -21,7 +21,7 @@ impl Request for CreateDirectory {
         reqwest::Method::from_bytes(b"MKCOL").expect("HTTP method should be valid")
     }
 
-    fn endpoint(&self) -> Cow<str> {
+    fn endpoint(&self) -> Cow<'_, str> {
         (&self.path).into()
     }
 

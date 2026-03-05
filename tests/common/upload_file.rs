@@ -24,7 +24,7 @@ impl Request for UploadFile {
         reqwest::Method::PUT
     }
 
-    fn endpoint(&self) -> Cow<str> {
+    fn endpoint(&self) -> Cow<'_, str> {
         (&self.path).into()
     }
 

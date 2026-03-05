@@ -77,7 +77,7 @@
           buildInputs = with nixpkgsFor.${system}; [
             cargo-fuzz
             cargo-llvm-cov
-            nixfmt-rfc-style
+            nixfmt
             openssl
             pkg-config
             (selectRustToolchain system)

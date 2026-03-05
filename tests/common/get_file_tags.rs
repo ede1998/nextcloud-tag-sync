@@ -13,7 +13,7 @@ impl Request for GetFileTags {
         reqwest::Method::from_bytes(b"PROPFIND").expect("valid HTTP method")
     }
 
-    fn endpoint(&self) -> Cow<str> {
+    fn endpoint(&self) -> Cow<'_, str> {
         format!("systemtags-relations/files/{}", self.0).into()
     }
 

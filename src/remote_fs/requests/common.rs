@@ -92,7 +92,7 @@ fn is_database_lock_error(error: &reqwest::Error, payload: &str) -> bool {
     let Some(status) = error.status() else {
         return false;
     };
-    if status.is_server_error() && payload.contains("LockWaitTimeoutException") {
+    if status.is_server_error() && payload.contains("database is locked") {
         error!("Request failed: {}", error);
         return true;
     }

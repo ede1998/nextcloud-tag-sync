@@ -23,7 +23,7 @@ impl Image for NextcloudImage {
     }
 
     fn tag(&self) -> &str {
-        "29.0.6"
+        "33.0.3"
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {
